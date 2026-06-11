@@ -1,0 +1,113 @@
+import { useVirtualList } from "@/hooks/useVirtualList";
+import { useListLayout } from "@/hooks/useListLayout";
+import { dataProcessing } from "@/utils";
+import { Tooltip } from "antd";
+import { RightOutlined } from "@ant-design/icons";
+import type { ProcessInfo, TableColumn } from '@/type/index'
+import React from "react";
+import "./index.less"
+
+interface VirtualListConfig {
+    list: any[],
+    listConfig?: {
+        containerHeight?: number,
+        itemHeight?: number,
+        onContextMenu?: (e: React.MouseEvent, type: 'headerContext' | 'itemContext') => void
+    },
+    headerConfig?: {
+        height?: number,
+        onClick?: (e: React.MouseEvent) => void
+    },
+    columns: TableColumn[]
+}
+
+const defaultItemHeight = 36
+const defaultColumnWidth = 160
+const deviationWidth = 64
+const deviationHeight = 202
+const fontSize = 14
+
+export function VirtualList({ list, listConfig, columns, headerConfig }: VirtualListConfig) {
+
+    const { container, content, itemList, contentStyle, itemRefs, expandedIds, toggleExpand } = useVirtualList(list, listConfig?.itemHeight);
+    const { columnWidth, containerHeight } = useListLayout(columns, { deviationWidth, deviationHeight });
+
+    const getCellStyle = (dataIndex: string, level?: string | number) => {
+        const col = columns.find(col => col.dataIndex === dataIndex);
+        const style: { [key: string]: string } = {
+            flexBasis: col ? (col.width === 'auto' ? columnWidth : col.width) : defaultColumnWidth,
+            textAlign: col?.align || 'left',
+            display: col?.hidden ? 'none' : 'block',
+            fontSize: `${fontSize}px`
+        }
+        if (level) {
+            style.paddingLeft = `${(Number(level) + 1) * fontSize}px`
+        }
+        return style
+    }
+
+    const isEmpty = !list || list.length === 0
+
+    return (
+        <div className="virtual-list">
+            <div className="virtual-list-header" onContextMenu={(e) => listConfig?.onContextMenu!(e, 'headerContext')} style={{ height: `${listConfig?.itemHeight || defaultItemHeight}px` }}>
+                {columns.map((col) => (
+                    <div className="header-column" key={col.dataIndex} style={getCellStyle(col.dataIndex)}>
+                        {col.title}
+                    </div>
+                ))
+                }
+            </div>
+            <div ref={container} className="virtual-list-content" style={{ height: `${containerHeight}px` }}>
+                {isEmpty && <div>暂无数据</div>}
+                {!isEmpty && <div ref={content} style={contentStyle}>
+                    {itemList.map((item: ProcessInfo) => {
+                        const formatData = dataProcessing(item);
+                        const itemId = String(formatData.id ?? '');
+                        const isExpanded = expandedIds.has(itemId);
+                        const showDescriptionTooltip = Math.floor(columnWidth / fontSize) < formatData.description!.length
+                        const showNameTooltip = Math.floor(columnWidth / fontSize) < formatData.name!.length
+                        const hasChildren = !!item.children && item.children.length > 0
+                        return (
+                            <div className='list-item'
+                                key={`${formatData.id}`}
+                                id={formatData.id}
+                                ref={node => itemRefs(node, formatData.id as string)}
+                                style={{ height: `${listConfig?.itemHeight || defaultItemHeight}px` }}
+                                onContextMenu={(e) => listConfig?.onContextMenu!(e, 'itemContext')}
+                                data-pid={formatData.pid}
+                                data-desc={formatData.description}
+                            >
+                                {showDescriptionTooltip ? (
+                                    <Tooltip title={formatData.description}>
+                                        <div className="list-cell" style={getCellStyle('description', formatData.level)} onClick={() => toggleExpand(itemId)}>
+                                            {hasChildren && <RightOutlined className={isExpanded ? 'cell-expand expanded' : 'cell-expand'}></RightOutlined>}
+                                            <img className="cell-icon" src={formatData.icon} alt={formatData.description} />
+                                            <span className="cell-text">{formatData.description}</span>
+                                        </div>
+                                    </Tooltip>
+                                ) : (<div className="list-cell" style={getCellStyle('description', formatData.level)} onClick={() => toggleExpand(itemId)}>
+                                    {hasChildren && <RightOutlined className={isExpanded ? 'cell-expand expanded' : 'cell-expand'}></RightOutlined>}
+                                    <img src={formatData.icon} alt={formatData.description} />
+                                    <span>{formatData.description}</span>
+                                </div>)}
+                                <span className="list-cell" style={getCellStyle('type')}>{formatData.typeAlias}</span>
+                                <span className="list-cell" style={getCellStyle('cpu')}>{formatData.cpuAlias}</span>
+                                <span className="list-cell" style={getCellStyle('memory')}>{formatData.memoryAlias}</span>
+                                {showNameTooltip ? (
+                                    <Tooltip title={formatData.name}>
+                                        <span className="list-cell cell-text" style={getCellStyle('name')}>{formatData.name}</span>
+                                    </Tooltip>
+                                ) : (<span className="list-cell cell-text" style={getCellStyle('name')}>{formatData.name}</span>)}
+                                <span className="list-cell" style={getCellStyle('pid')}>{formatData.pid}</span>
+                                {/* <span className="list-cell" style={getCellStyle('action')}>{formatData.action}</span> */}
+                            </div>
+                        )
+                    })}
+                </div>}
+            </div>
+        </div>
+
+    );
+
+}

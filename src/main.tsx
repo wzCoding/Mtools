@@ -1,0 +1,12 @@
+import 'virtual:svg-icons-register'
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './theme.less'
+import App from './App.tsx'
+
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)

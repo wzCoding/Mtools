@@ -1,0 +1,8 @@
+{
+    "description": "名称",
+    "type": "类型",
+    "cpu":"CPU",
+    "memory":"内存",
+    "name":"进程",
+    "pid": "进程ID"
+}

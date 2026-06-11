@@ -1,0 +1,47 @@
+.title-bar {
+    -webkit-app-region: drag;
+    height: var(--title-bar-height);
+    width: 100%;
+    background-color: var(--bg-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    .title-bar-drag-region {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        font-size: 12px;
+        padding: 0 10px;
+        gap: 10px;
+
+        img {
+            width: 18px;
+            height: 18px;
+        }
+    }
+
+    .title-bar-buttons {
+        -webkit-app-region: no-drag;
+        width: 90px;
+        display: flex;
+        height: 100%;
+        align-items: center;
+
+        .title-bar-button {
+            border: none;
+            outline: none;
+            background: transparent;
+            padding: 0;
+            width: 30px;
+            height: 100%;
+
+            &:hover {
+                background-color: var(--action-hover);
+            }
+        }
+    }
+}
