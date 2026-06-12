@@ -15,7 +15,7 @@ native/**/build/
 node_modules
 dist
 dist-ssr
-models/
+models/*.onnx
 *.local
 
 # Editor directories and files
