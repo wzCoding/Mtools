@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { Button, Slider, Radio, Upload, message, Spin, Space, Tooltip } from 'antd'
+import { Button, Slider, Radio, Upload, message, Spin, Space, Tooltip, Segmented } from 'antd'
 import {
   UploadOutlined,
   DeleteOutlined,
@@ -8,6 +8,8 @@ import {
   UndoOutlined,
   ClearOutlined,
   LoadingOutlined,
+  ThunderboltOutlined,
+  ExperimentOutlined,
 } from '@ant-design/icons'
 import { loadOpenCV, isCVReady } from '@/utils/opencv-loader'
 import {
@@ -17,6 +19,7 @@ import {
   canvasToBlob,
 } from '@/utils/inpaint'
 import type { UploadFile } from 'antd'
+import KonvaCanvas, { type KonvaCanvasRef } from '@/components/KonvaCanvas'
 import './index.less'
 
 /** 选区矩形 */
@@ -50,12 +53,15 @@ export default function ReWatermark() {
   const [inpaintRadius, setInpaintRadius] = useState(5)
   const [algorithm, setAlgorithm] = useState<'telea' | 'ns'>('telea')
   const [viewMode, setViewMode] = useState<'before' | 'after'>('before')
+  const [repairMode, setRepairMode] = useState<'fast' | 'quality'>('fast')
+  const [resultImageUrl, setResultImageUrl] = useState<string>('') // LaMa 模式结果 URL
 
   // --- Refs ---
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const resultCanvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const rectIdCounter = useRef(0)
+  const konvaRef = useRef<KonvaCanvasRef>(null) // 高质量模式 Konva 实例
 
   // 图片在 canvas 上的显示参数
   const displayParams = useRef({ scale: 1, offsetX: 0, offsetY: 0, imgW: 0, imgH: 0 })
@@ -208,7 +214,9 @@ export default function ReWatermark() {
       setRects([])
       setRectsHistory([])
       setResultImageData(null)
+      setResultImageUrl('')
       setViewMode('before')
+      konvaRef.current?.clearAll()
       message.success('图片加载成功，请在图片上框选水印区域')
     } catch {
       message.error('图片加载失败，请重试')
@@ -314,12 +322,17 @@ export default function ReWatermark() {
     setViewMode('before')
   }
 
-  // --- 执行去水印 ---
+  // --- 执行去水印（快速模式：OpenCV）---
   const handleRemoveWatermark = async () => {
     if (!sourceImage || rects.length === 0) {
       message.warning('请先框选水印区域')
       return
     }
+
+    if (repairMode === 'quality') {
+      return handleRemoveWatermarkQuality()
+    }
+
     if (!isCVReady()) {
       message.error('OpenCV 尚未就绪，请等待加载完成')
       return
@@ -337,6 +350,64 @@ export default function ReWatermark() {
     } catch (err: any) {
       message.error(`处理失败: ${err.message}`)
     } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // --- 执行去水印（高质量模式：LaMa AI）---
+  const handleRemoveWatermarkQuality = async () => {
+    if (!sourceImage || !konvaRef.current) {
+      message.warning('请先在图片上涂抹水印区域')
+      return
+    }
+    if (!konvaRef.current.hasStrokes()) {
+      message.warning('请先在图片上涂抹水印区域')
+      return
+    }
+
+    setIsProcessing(true)
+    try {
+      // 1. 导出 mask 图
+      const maskDataUrl = konvaRef.current.exportMask()
+      const maskResp = await fetch(maskDataUrl)
+      const maskBuffer = await maskResp.arrayBuffer()
+
+      // 2. 获取原图 Buffer
+      const imgResp = await fetch(sourceImage.src)
+      const imageBuffer = await imgResp.arrayBuffer()
+
+      // 3. 调用 IPC → 主进程 LaMa 推理
+      const result = await window.bridgeApis.inpaintLaMa(imageBuffer, maskBuffer)
+
+      if (!result.success) {
+        throw new Error(result.error || 'LaMa 处理失败')
+      }
+
+      // 4. 结果 Buffer → ImageData → 渲染
+      const blob = new Blob([result.data!], { type: 'image/png' })
+      const url = URL.createObjectURL(blob)
+      setResultImageUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return url })
+
+      const resultImg = new Image()
+      resultImg.onload = () => {
+        const tempCanvas = document.createElement('canvas')
+        tempCanvas.width = resultImg.naturalWidth
+        tempCanvas.height = resultImg.naturalHeight
+        const ctx = tempCanvas.getContext('2d')!
+        ctx.drawImage(resultImg, 0, 0)
+        const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height)
+        setResultImageData(imageData)
+        setViewMode('after')
+        message.success('AI 水印去除完成！')
+        setIsProcessing(false)
+      }
+      resultImg.onerror = () => {
+        message.error('结果图片加载失败')
+        setIsProcessing(false)
+      }
+      resultImg.src = url
+    } catch (err: any) {
+      message.error(`AI 处理失败: ${err.message}`)
       setIsProcessing(false)
     }
   }
@@ -367,7 +438,74 @@ export default function ReWatermark() {
     setRects([])
     setRectsHistory([])
     setResultImageData(null)
+    setResultImageUrl('')
     setViewMode('before')
+    konvaRef.current?.clearAll()
+  }
+
+  // --- 工作区渲染（避免 JSX 嵌套三元）---
+  const renderWorkspace = () => {
+    if (!sourceImage) {
+      return (
+        <div className="rw-upload-hint">
+          <Upload
+            accept="image/png,image/jpeg,image/webp,image/bmp"
+            showUploadList={false}
+            beforeUpload={() => false}
+            onChange={handleFileChange}
+          >
+            <div className="rw-drop-zone">
+              <UploadOutlined style={{ fontSize: 48, color: '#bbb' }} />
+              <p>点击或拖拽图片到此处</p>
+              <p className="rw-drop-sub">支持 PNG / JPEG / WebP / BMP，最大 50MB</p>
+            </div>
+          </Upload>
+        </div>
+      )
+    }
+
+    if (repairMode === 'quality') {
+      if (viewMode === 'before') {
+        return (
+          <KonvaCanvas
+            ref={konvaRef}
+            image={sourceImage}
+            containerWidth={containerRef.current?.clientWidth ?? 800}
+            containerHeight={containerRef.current?.clientHeight ?? 500}
+            disabled={isProcessing}
+          />
+        )
+      }
+      return (
+        <div className="rw-result-container" style={{ display: 'inline-block' }}>
+          <canvas ref={resultCanvasRef} className="rw-canvas rw-result-canvas" />
+        </div>
+      )
+    }
+
+    // 快速模式
+    return (
+      <>
+        <canvas
+          ref={canvasRef}
+          className="rw-canvas"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          style={{
+            display: viewMode === 'before' ? 'block' : 'none',
+            cursor: isProcessing ? 'wait' : 'crosshair',
+          }}
+        />
+        <div
+          className="rw-result-container"
+          style={{ display: viewMode === 'after' ? 'inline-block' : 'none' }}
+        >
+          <canvas ref={resultCanvasRef} className="rw-canvas rw-result-canvas" />
+        </div>
+      </>
+    )
   }
 
   // --- 加载中 ---
@@ -402,6 +540,22 @@ export default function ReWatermark() {
       {/* 顶部工具栏 */}
       <div className="rw-toolbar">
         <Space size="middle" wrap>
+          {/* 模式切换 */}
+          <Segmented
+            options={[
+              { label: '快速模式', value: 'fast', icon: <ThunderboltOutlined /> },
+              { label: 'AI 高质量', value: 'quality', icon: <ExperimentOutlined /> },
+            ]}
+            value={repairMode}
+            onChange={(val) => {
+              setRepairMode(val as 'fast' | 'quality')
+              setResultImageData(null)
+              setResultImageUrl('')
+              setViewMode('before')
+            }}
+            disabled={isProcessing}
+          />
+
           <Upload
             accept="image/png,image/jpeg,image/webp,image/bmp"
             showUploadList={false}
@@ -433,11 +587,14 @@ export default function ReWatermark() {
                 type="primary"
                 icon={isProcessing ? <LoadingOutlined /> : <ScissorOutlined />}
                 onClick={handleRemoveWatermark}
-                disabled={rects.length === 0 || isProcessing || !!resultImageData}
+                disabled={
+                  isProcessing || !!resultImageData ||
+                  (repairMode === 'fast' ? rects.length === 0 : !konvaRef.current?.hasStrokes())
+                }
                 loading={isProcessing}
                 danger
               >
-                {isProcessing ? '处理中...' : '去除水印'}
+                {isProcessing ? '处理中...' : repairMode === 'quality' ? 'AI 去除水印' : '去除水印'}
               </Button>
             </>
           )}
@@ -466,8 +623,8 @@ export default function ReWatermark() {
         </Space>
       </div>
 
-      {/* 参数设置 */}
-      {sourceImage && (
+      {/* 参数设置（仅快速模式） */}
+      {sourceImage && repairMode === 'fast' && (
         <div className="rw-settings">
           <Space size="large" wrap>
             <div className="rw-setting-item">
@@ -496,8 +653,8 @@ export default function ReWatermark() {
         </div>
       )}
 
-      {/* 选区列表（修复完成后隐藏） */}
-      {rects.length > 0 && !resultImageData && (
+      {/* 选区列表（仅快速模式 + 修复完成前） */}
+      {repairMode === 'fast' && rects.length > 0 && !resultImageData && (
         <div className="rw-rect-list">
           <span className="rw-rect-label">已选区域 ({rects.length}):</span>
           {rects.map((r) => (
@@ -511,46 +668,7 @@ export default function ReWatermark() {
 
       {/* 图片编辑区 */}
       <div className="rw-workspace" ref={containerRef}>
-        {!sourceImage ? (
-          <div className="rw-upload-hint">
-            <Upload
-              accept="image/png,image/jpeg,image/webp,image/bmp"
-              showUploadList={false}
-              beforeUpload={() => false}
-              onChange={handleFileChange}
-            >
-              <div className="rw-drop-zone">
-                <UploadOutlined style={{ fontSize: 48, color: '#bbb' }} />
-                <p>点击或拖拽图片到此处</p>
-                <p className="rw-drop-sub">支持 PNG / JPEG / WebP / BMP，最大 50MB</p>
-              </div>
-            </Upload>
-          </div>
-        ) : (
-          <>
-            {/* 原图编辑区 — 始终挂载，通过 display 控制显隐 */}
-            <canvas
-              ref={canvasRef}
-              className="rw-canvas"
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              style={{
-                display: viewMode === 'before' ? 'block' : 'none',
-                cursor: isProcessing ? 'wait' : 'crosshair',
-              }}
-            />
-
-            {/* 结果预览区 — 始终挂载，通过 display 控制显隐 */}
-            <div
-              className="rw-result-container"
-              style={{ display: viewMode === 'after' ? 'inline-block' : 'none' }}
-            >
-              <canvas ref={resultCanvasRef} className="rw-canvas rw-result-canvas" />
-            </div>
-          </>
-        )}
+        {renderWorkspace()}
       </div>
     </div>
   )

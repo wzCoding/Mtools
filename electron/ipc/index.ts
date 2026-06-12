@@ -6,15 +6,14 @@ import { getProcessCpuTime, getSystemCpuTimes } from "@native/cpuInfo";
 import { getFileDescription } from "@native/descriptionInfo"
 import { killProcess } from "@native/killProcess";
 import { getAppIconByPath } from "../utils/index";
+import { registerInpaintLaMaHandler } from "./ipc-inpaint-lama";
 
 export default function handleIpcEvents(win: BrowserWindow) {
-    // Handle IPC events 
-    // 最小化窗口
+    // 窗口控制
     ipcMain.on('window-minimize', () => {
         win.minimize()
     });
 
-    // 最大化或还原窗口
     ipcMain.on('window-maximize', () => {
         if (win.isMaximized()) {
             win.unmaximize();
@@ -23,14 +22,13 @@ export default function handleIpcEvents(win: BrowserWindow) {
         }
     });
 
-    // 关闭窗口
     ipcMain.on('window-close', () => {
         win.close()
     });
 
+    // ─── 系统信息 ───
     ipcMain.handle('get-processes', async () => {
-        const processes = await getProcesses();
-        return processes;
+        return await getProcesses();
     });
 
     ipcMain.handle('get-process-memory', (_, pid: number) => {
@@ -58,11 +56,13 @@ export default function handleIpcEvents(win: BrowserWindow) {
     });
 
     ipcMain.handle('get-app-icon', (_, appPath: string) => {
-
         return getAppIconByPath(appPath);
     });
 
     ipcMain.handle('get-system-uptime', () => {
-        return os.uptime(); // 返回系统运行秒数
+        return os.uptime();
     });
+
+    // ─── LaMa AI 去水印 ───
+    registerInpaintLaMaHandler(win);
 }

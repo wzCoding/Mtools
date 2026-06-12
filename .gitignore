@@ -9,9 +9,13 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Native build artifacts
+native/**/build/
+
 node_modules
 dist
 dist-ssr
+models/
 *.local
 
 # Editor directories and files

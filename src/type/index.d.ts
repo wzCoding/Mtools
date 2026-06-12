@@ -7,7 +7,7 @@ export interface dataObj {
 }
 
 export type FileCacheData  = Map<string, { icon: string, description: string }>
-   
+
 export interface Position {
     x: number
     y: number
@@ -26,6 +26,34 @@ export interface VirtualPosition {
     bottom: number,
     height: number,
     diffHeight: number
+}
+
+// ─── Electron Bridge API 类型 ───
+export interface BridgeApis {
+    maximize: () => void
+    minimize: () => void
+    close: () => void
+    getProcesses: () => Promise<ProcessInfo[]>
+    getProcessMemory: (pid: number) => Promise<any>
+    getSystemMemory: () => Promise<any>
+    getProcessCpuTimes: (pid: number) => Promise<any>
+    getSystemCpuTimes: () => Promise<any>
+    getFileDescription: (path: string) => Promise<string>
+    getAppIcon: (appPath: string) => Promise<string>
+    killProcess: (pid: number) => Promise<number>
+    getSystemUptime: () => Promise<number>
+    /** LaMa AI 高质量去水印 */
+    inpaintLaMa: (imageBuffer: ArrayBuffer, maskBuffer: ArrayBuffer) => Promise<{
+        success: boolean
+        data?: ArrayBuffer
+        error?: string
+    }>
+}
+
+declare global {
+    interface Window {
+        bridgeApis: BridgeApis
+    }
 }
 
 export type TreeData<T> = T & {

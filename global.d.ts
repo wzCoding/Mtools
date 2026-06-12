@@ -15,6 +15,7 @@ declare global {
             getAppIcon: (appPath: string) => Promise<string>;
             killProcess: (pid: number) => Promise<number>;
             getSystemUptime: () => Promise<number>;
+            inpaintLaMa: (imageBuffer: ArrayBuffer, maskBuffer: ArrayBuffer) => Promise<any>
         };
     }
 }
@@ -32,8 +33,8 @@ export interface ProcessInfo {
     children?: ProcessInfo[]
     action?: string
     id?: string
-    icon?:string
-    level?:number
+    icon?: string
+    level?: number
 }
 
 export interface ProcessMemoryInfo {

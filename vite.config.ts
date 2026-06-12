@@ -24,7 +24,14 @@ export default defineConfig({
         vite: {
           build: {
             sourcemap: 'inline',
-            outDir: 'dist-electron/main'
+            outDir: 'dist-electron/main',
+            rollupOptions: {
+              external: [
+                'sharp',
+                'onnxruntime-node',
+                'onnxruntime-common',
+              ],
+            },
           },
           resolve: {
             alias: {
@@ -58,5 +65,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
       '@native': path.resolve(__dirname, 'native')
     }
-  }
+  },
+ 
 })
