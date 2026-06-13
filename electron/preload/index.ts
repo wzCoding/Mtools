@@ -26,7 +26,7 @@ contextBridge.exposeInMainWorld("bridgeApis", {
      */
     inpaintLaMa: (imageBuffer: ArrayBuffer, maskBuffer: ArrayBuffer) =>
         ipcRenderer.invoke("inpaint:lama", {
-            imageBuffer: Buffer.from(imageBuffer),
-            maskBuffer: Buffer.from(maskBuffer),
+            imageBuffer,
+            maskBuffer,
         }),
 });

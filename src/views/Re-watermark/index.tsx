@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { Button, Slider, Radio, Upload, message, Spin, Space, Tooltip, Segmented } from 'antd'
+import { Button, Slider, Radio, Upload, message, Spin, Space, Tooltip, Segmented, Modal } from 'antd'
 import {
   UploadOutlined,
   DeleteOutlined,
@@ -55,6 +55,9 @@ export default function ReWatermark() {
   const [viewMode, setViewMode] = useState<'before' | 'after'>('before')
   const [repairMode, setRepairMode] = useState<'fast' | 'quality'>('fast')
   const [resultImageUrl, setResultImageUrl] = useState<string>('') // LaMa 模式结果 URL
+  const [brushSize, setBrushSize] = useState(20) // 高质量模式笔刷大小
+  const [hasKonvaStrokes, setHasKonvaStrokes] = useState(false)
+  const [workspaceSize, setWorkspaceSize] = useState({ w: 800, h: 500 }) // 缓存工作区尺寸
 
   // --- Refs ---
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -65,6 +68,19 @@ export default function ReWatermark() {
 
   // 图片在 canvas 上的显示参数
   const displayParams = useRef({ scale: 1, offsetX: 0, offsetY: 0, imgW: 0, imgH: 0 })
+
+  // --- 监听容器尺寸变化（仅在真正 resize 时更新，避免渲染抖动）---
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const updateSize = () => {
+      setWorkspaceSize({ w: container.clientWidth, h: container.clientHeight })
+    }
+    updateSize()
+    const observer = new ResizeObserver(updateSize)
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
 
   // --- 初始化 OpenCV ---
   useEffect(() => {
@@ -115,9 +131,9 @@ export default function ReWatermark() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // 计算适合容器的显示尺寸
-    const maxW = container.clientWidth - 32
-    const maxH = container.clientHeight - 32
+    // 使用缓存的尺寸，避免渲染抖动
+    const maxW = workspaceSize.w - 32
+    const maxH = workspaceSize.h - 32
     const imgW = sourceImage.naturalWidth
     const imgH = sourceImage.naturalHeight
 
@@ -148,7 +164,7 @@ export default function ReWatermark() {
         drawTempRect(ctx, drawStart, drawCurrent)
       }
     }
-  }, [sourceImage, isDrawing, drawStart, drawCurrent, drawAllRects])
+  }, [sourceImage, isDrawing, drawStart, drawCurrent, drawAllRects, workspaceSize])
 
 
 
@@ -179,16 +195,15 @@ export default function ReWatermark() {
 
   // --- 渲染结果图（与编辑区使用相同的显示尺寸）---
   useEffect(() => {
-    if (resultImageData && resultCanvasRef.current && containerRef.current) {
-      const container = containerRef.current
-      const maxW = container.clientWidth - 32
-      const maxH = container.clientHeight - 32
+    if (resultImageData && resultCanvasRef.current) {
+      const maxW = workspaceSize.w - 32
+      const maxH = workspaceSize.h - 32
       const scale = Math.min(maxW / resultImageData.width, maxH / resultImageData.height, 1)
       const displayW = Math.floor(resultImageData.width * scale)
       const displayH = Math.floor(resultImageData.height * scale)
       renderImageDataToCanvas(resultCanvasRef.current, resultImageData, displayW, displayH)
     }
-  }, [resultImageData, viewMode])
+  }, [resultImageData, viewMode, workspaceSize])
 
   // --- 上传图片 ---
   const handleFileChange = useCallback(async (info: { fileList: UploadFile[] }) => {
@@ -217,6 +232,7 @@ export default function ReWatermark() {
       setResultImageUrl('')
       setViewMode('before')
       konvaRef.current?.clearAll()
+      setHasKonvaStrokes(false)
       message.success('图片加载成功，请在图片上框选水印区域')
     } catch {
       message.error('图片加载失败，请重试')
@@ -304,8 +320,14 @@ export default function ReWatermark() {
 
   // --- 清空所有选区 ---
   const clearAllRects = () => {
+    if (repairMode === 'quality') {
+      konvaRef.current?.clearAll()
+      setResultImageData(null)
+      setViewMode('before')
+      return
+    }
     if (rects.length === 0) return
-    pushHistory(rects) // 保存清空前的状态
+    pushHistory(rects)
     setRects([])
     setResultImageData(null)
     setViewMode('before')
@@ -313,8 +335,13 @@ export default function ReWatermark() {
 
   // --- 撤销：恢复到上一次操作前的状态 ---
   const undoLastRect = () => {
+    if (repairMode === 'quality') {
+      konvaRef.current?.undoLast()
+      setResultImageData(null)
+      setViewMode('before')
+      return
+    }
     if (rectsHistory.length === 0) return
-    // 栈顶保存的是「上一步操作前」的状态，直接恢复
     const lastState = rectsHistory[rectsHistory.length - 1]
     setRects(lastState)
     setRectsHistory((prev) => prev.slice(0, -1))
@@ -324,8 +351,16 @@ export default function ReWatermark() {
 
   // --- 执行去水印（快速模式：OpenCV）---
   const handleRemoveWatermark = async () => {
-    if (!sourceImage || rects.length === 0) {
+    if (!sourceImage) {
+      message.warning('请先上传图片')
+      return
+    }
+    if (repairMode === 'fast' && rects.length === 0) {
       message.warning('请先框选水印区域')
+      return
+    }
+    if (repairMode === 'quality' && !hasKonvaStrokes) {
+      message.warning('请先在图片上涂抹水印区域')
       return
     }
 
@@ -369,22 +404,35 @@ export default function ReWatermark() {
     try {
       // 1. 导出 mask 图
       const maskDataUrl = konvaRef.current.exportMask()
+      console.log('[Quality] mask 导出完成, 长度:', maskDataUrl.length)
+
       const maskResp = await fetch(maskDataUrl)
       const maskBuffer = await maskResp.arrayBuffer()
 
       // 2. 获取原图 Buffer
       const imgResp = await fetch(sourceImage.src)
       const imageBuffer = await imgResp.arrayBuffer()
+      console.log('[Quality] 图片准备完成, 原图:', imageBuffer.byteLength, 'mask:', maskBuffer.byteLength)
 
-      // 3. 调用 IPC → 主进程 LaMa 推理
+      // 3. 检查 bridgeApis 是否可用
+      if (!window.bridgeApis?.inpaintLaMa) {
+        console.error('[Quality] window.bridgeApis 不可用:', window.bridgeApis)
+        throw new Error('应用通信桥未就绪，请重启应用后重试')
+      }
+
+      // 4. 调用 IPC → 主进程 LaMa 推理
+      console.log('[Quality] 开始 IPC 调用...')
       const result = await window.bridgeApis.inpaintLaMa(imageBuffer, maskBuffer)
+      console.log('[Quality] IPC 返回:', result.success, result.error || '')
 
       if (!result.success) {
         throw new Error(result.error || 'LaMa 处理失败')
       }
 
-      // 4. 结果 Buffer → ImageData → 渲染
-      const blob = new Blob([result.data!], { type: 'image/png' })
+      // 5. 结果 Buffer → ImageData → 渲染（合成结果：mask区=AI，其余=原图）
+      const resultBuf = result.data!
+      console.log('[Quality] 结果数据大小:', resultBuf.byteLength)
+      const blob = new Blob([resultBuf], { type: 'image/png' })
       const url = URL.createObjectURL(blob)
       setResultImageUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return url })
 
@@ -441,6 +489,7 @@ export default function ReWatermark() {
     setResultImageUrl('')
     setViewMode('before')
     konvaRef.current?.clearAll()
+    setHasKonvaStrokes(false)
   }
 
   // --- 工作区渲染（避免 JSX 嵌套三元）---
@@ -465,14 +514,18 @@ export default function ReWatermark() {
     }
 
     if (repairMode === 'quality') {
+      const maxW = workspaceSize.w - 32
+      const maxH = workspaceSize.h - 32
       if (viewMode === 'before') {
         return (
           <KonvaCanvas
             ref={konvaRef}
             image={sourceImage}
-            containerWidth={containerRef.current?.clientWidth ?? 800}
-            containerHeight={containerRef.current?.clientHeight ?? 500}
+            containerWidth={maxW}
+            containerHeight={maxH}
             disabled={isProcessing}
+            brushSize={brushSize}
+            onStrokesChange={setHasKonvaStrokes}
           />
         )
       }
@@ -548,15 +601,30 @@ export default function ReWatermark() {
             ]}
             value={repairMode}
             onChange={(val) => {
-              setRepairMode(val as 'fast' | 'quality')
-              setResultImageData(null)
-              setResultImageUrl('')
-              setViewMode('before')
+              const newMode = val as 'fast' | 'quality'
+              if (newMode === repairMode) return
+
+              if (!sourceImage) {
+                // 没有上传图片时直接切换
+                setRepairMode(newMode)
+                return
+              }
+
+              Modal.confirm({
+                title: '切换模式',
+                content: `切换到「${newMode === 'fast' ? '快速模式' : 'AI 高质量'}」将重置当前图片和所有操作，是否继续？`,
+                okText: '确认切换',
+                cancelText: '取消',
+                onOk: () => {
+                  setRepairMode(newMode)
+                  handleReset()
+                },
+              })
             }}
             disabled={isProcessing}
           />
 
-          <Upload
+          {/* <Upload
             accept="image/png,image/jpeg,image/webp,image/bmp"
             showUploadList={false}
             beforeUpload={() => false}
@@ -565,7 +633,7 @@ export default function ReWatermark() {
             <Button type="primary" icon={<UploadOutlined />} disabled={isProcessing}>
               上传图片
             </Button>
-          </Upload>
+          </Upload> */}
 
           {sourceImage && (
             <>
@@ -573,13 +641,23 @@ export default function ReWatermark() {
                 <Button
                   icon={<UndoOutlined />}
                   onClick={undoLastRect}
-                  disabled={rectsHistory.length === 0 || isProcessing || !!resultImageData}
+                  disabled={
+                    isProcessing || !!resultImageData ||
+                    (repairMode === 'fast' ? rectsHistory.length === 0 : !hasKonvaStrokes)
+                  }
                 >
                   撤销
                 </Button>
               </Tooltip>
               <Tooltip title="清空所有选区">
-                <Button icon={<ClearOutlined />} onClick={clearAllRects} disabled={rects.length === 0 || isProcessing || !!resultImageData}>
+                <Button
+                  icon={<ClearOutlined />}
+                  onClick={clearAllRects}
+                  disabled={
+                    isProcessing || !!resultImageData ||
+                    (repairMode === 'fast' ? rects.length === 0 : !hasKonvaStrokes)
+                  }
+                >
                   清空
                 </Button>
               </Tooltip>
@@ -589,7 +667,7 @@ export default function ReWatermark() {
                 onClick={handleRemoveWatermark}
                 disabled={
                   isProcessing || !!resultImageData ||
-                  (repairMode === 'fast' ? rects.length === 0 : !konvaRef.current?.hasStrokes())
+                  (repairMode === 'fast' ? rects.length === 0 : !hasKonvaStrokes)
                 }
                 loading={isProcessing}
                 danger
@@ -623,32 +701,50 @@ export default function ReWatermark() {
         </Space>
       </div>
 
-      {/* 参数设置（仅快速模式） */}
-      {sourceImage && repairMode === 'fast' && (
+      {/* 参数设置 */}
+      {sourceImage && (
         <div className="rw-settings">
           <Space size="large" wrap>
-            <div className="rw-setting-item">
-              <Tooltip title="修复时从水印周围多大范围内采样填充。值越小越精细，值越大越平滑但可能模糊细节" placement='right'>
-                <span className="rw-setting-label">修复半径: {inpaintRadius}px</span>
-              </Tooltip>
-              <Slider
-                min={1}
-                max={15}
-                value={inpaintRadius}
-                onChange={setInpaintRadius}
-                disabled={isProcessing || !!resultImageData}
-                style={{ width: 150 }}
-              />
-            </div>
-            <div className="rw-setting-item">
-              <span className="rw-setting-label">修复算法:</span>
-              <Radio.Group
-                options={ALGORITHM_OPTIONS}
-                value={algorithm}
-                onChange={(e) => setAlgorithm(e.target.value)}
-                disabled={isProcessing || !!resultImageData}
-              />
-            </div>
+            {repairMode === 'fast' ? (
+              <>
+                <div className="rw-setting-item">
+                  <Tooltip title="修复时从水印周围多大范围内采样填充。值越小越精细，值越大越平滑但可能模糊细节" placement='right'>
+                    <span className="rw-setting-label">修复半径: {inpaintRadius}px</span>
+                  </Tooltip>
+                  <Slider
+                    min={1}
+                    max={15}
+                    value={inpaintRadius}
+                    onChange={setInpaintRadius}
+                    disabled={isProcessing || !!resultImageData}
+                    style={{ width: 150 }}
+                  />
+                </div>
+                <div className="rw-setting-item">
+                  <span className="rw-setting-label">修复算法:</span>
+                  <Radio.Group
+                    options={ALGORITHM_OPTIONS}
+                    value={algorithm}
+                    onChange={(e) => setAlgorithm(e.target.value)}
+                    disabled={isProcessing || !!resultImageData}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="rw-setting-item">
+                <Tooltip title="涂抹水印区域时的画笔粗细，数值越大覆盖范围越宽" placement='right'>
+                  <span className="rw-setting-label">笔刷大小: {brushSize}px</span>
+                </Tooltip>
+                <Slider
+                  min={5}
+                  max={60}
+                  value={brushSize}
+                  onChange={setBrushSize}
+                  disabled={isProcessing || !!resultImageData}
+                  style={{ width: 150 }}
+                />
+              </div>
+            )}
           </Space>
         </div>
       )}

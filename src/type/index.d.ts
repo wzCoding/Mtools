@@ -46,6 +46,7 @@ export interface BridgeApis {
     inpaintLaMa: (imageBuffer: ArrayBuffer, maskBuffer: ArrayBuffer) => Promise<{
         success: boolean
         data?: ArrayBuffer
+        debugData?: ArrayBuffer
         error?: string
     }>
 }

@@ -42,28 +42,41 @@ async function getSession(): Promise<ort.InferenceSession> {
   const modelPath = getModelPath()
   if (!fs.existsSync(modelPath)) {
     throw new Error(
-      `LaMa 模型文件不存在: ${modelPath}\n` +
-      `请从 HuggingFace 下载: https://huggingface.co/Carve/LaMa-ONNX` +
-      `下载后放置到: ${path.dirname(modelPath)}/`
+      `[LaMa] Model not found: ${modelPath}\n` +
+      `Download from: https://huggingface.co/Carve/LaMa-ONNX\n` +
+      `Place in: ${path.dirname(modelPath)}/`
     )
   }
 
-  console.log('[LaMa] 加载模型:', modelPath)
+  console.log('[LaMa] Loading model:', modelPath)
   sessionCache = await ort.InferenceSession.create(modelPath, {
     executionProviders: ['cpu'], // Electron 主进程用 CPU
     graphOptimizationLevel: 'all',
   })
-  console.log('[LaMa] 模型加载完成')
+  console.log('[LaMa] Model loaded')
   return sessionCache
 }
 
-// ─── 预处理：图片 → 512×512 标准化 tensor ───
+// ─── 调试辅助 ───
+function tensorStats(label: string, t: Float32Array, channels: number) {
+  const perCh = t.length / channels
+  for (let c = 0; c < channels; c++) {
+    let min = Infinity, max = -Infinity, sum = 0
+    for (let i = 0; i < perCh; i++) {
+      const v = t[c * perCh + i]
+      if (v < min) min = v; if (v > max) max = v; sum += v
+    }
+    console.log(`[LaMa] ${label} ch${c}: min=${min.toFixed(4)} max=${max.toFixed(4)} mean=${(sum/perCh).toFixed(4)}`)
+  }
+}
+
+// ─── 预处理：图片 → 512×512 tensor（尝试 [0,1] 归一化）───
 async function preprocessImage(imageBuffer: Buffer): Promise<{
   tensor: Float32Array
   originalWidth: number
   originalHeight: number
 }> {
-  const { data, info } = await sharp(imageBuffer)
+  const { data } = await sharp(imageBuffer)
     .resize(512, 512, { fit: 'fill', kernel: 'lanczos3' })
     .removeAlpha()
     .raw()
@@ -71,15 +84,14 @@ async function preprocessImage(imageBuffer: Buffer): Promise<{
 
   const { width: originalWidth, height: originalHeight } = await sharp(imageBuffer).metadata()
 
-  // RGB → NCHW → Float32 归一化 [0, 1]
-  const tensor = new Float32Array(1 * 3 * 512 * 512)
-  const pixels = data.length / 3
+  const pixels = 512 * 512
+  const tensor = new Float32Array(1 * 3 * pixels)
   for (let i = 0; i < pixels; i++) {
-    tensor[i] = data[i * 3] / 255.0           // R
-    tensor[pixels + i] = data[i * 3 + 1] / 255.0 // G
-    tensor[2 * pixels + i] = data[i * 3 + 2] / 255.0 // B
+    tensor[i] = data[i * 3] / 255.0
+    tensor[pixels + i] = data[i * 3 + 1] / 255.0
+    tensor[2 * pixels + i] = data[i * 3 + 2] / 255.0
   }
-
+  tensorStats('Image input', tensor, 3)
   return { tensor, originalWidth: originalWidth!, originalHeight: originalHeight! }
 }
 
@@ -91,93 +103,121 @@ async function preprocessMask(maskBuffer: Buffer): Promise<Float32Array> {
     .raw()
     .toBuffer({ resolveWithObject: true })
 
-  // HWC grayscale → NCHW → Float32 归一化 [0, 1]，>128 视为 mask 区域
-  const tensor = new Float32Array(1 * 1 * 512 * 512)
-  for (let i = 0; i < 512 * 512; i++) {
+  const pixels = 512 * 512
+  const tensor = new Float32Array(1 * 1 * pixels)
+  for (let i = 0; i < pixels; i++) {
     tensor[i] = data[i] > 128 ? 1.0 : 0.0
   }
-
+  tensorStats('Mask input', tensor, 1)
   return tensor
 }
 
-// ─── 后处理：tensor → 缩放回原始尺寸 → 与原图合成 ───
-async function postprocess(
+// ─── tensor → Uint8Array RGB pixels ───
+function tensorToPixels(t: Float32Array): Uint8Array {
+  const pixels = 512 * 512
+  const out = new Uint8Array(pixels * 3)
+  // 检测输出值域：[0,1] 还是 [0,255]（此模型输出 [0,255]）
+  let maxVal = 0
+  for (let i = 0; i < pixels * 3; i++) { if (t[i] > maxVal) maxVal = t[i] }
+  const scale = maxVal > 2 ? 1 : 255
+  for (let i = 0; i < pixels; i++) {
+    let r = t[i], g = t[pixels + i], b = t[2 * pixels + i]
+    if (r < 0 || g < 0 || b < 0) { r = (r+1)/2; g = (g+1)/2; b = (b+1)/2 }
+    out[i*3]   = Math.round(Math.max(0, Math.min(255, r * scale)))
+    out[i*3+1] = Math.round(Math.max(0, Math.min(255, g * scale)))
+    out[i*3+2] = Math.round(Math.max(0, Math.min(255, b * scale)))
+  }
+  return out
+}
+
+// ─── 后处理：mask 引导合成 ───
+async function postprocessWithMask(
   outputTensor: Float32Array,
   originalWidth: number,
   originalHeight: number,
   originalImageBuffer: Buffer,
   maskBuffer: Buffer
 ): Promise<Buffer> {
-  // 1. tensor → 512×512 RGBA PNG buffer
-  const inpaintedPixels = new Uint8Array(512 * 512 * 3)
-  const pixels = 512 * 512
-  for (let i = 0; i < pixels; i++) {
-    inpaintedPixels[i * 3] = Math.round(Math.max(0, Math.min(1, outputTensor[i])) * 255)
-    inpaintedPixels[i * 3 + 1] = Math.round(Math.max(0, Math.min(1, outputTensor[pixels + i])) * 255)
-    inpaintedPixels[i * 3 + 2] = Math.round(Math.max(0, Math.min(1, outputTensor[2 * pixels + i])) * 255)
+  tensorStats('Model output', outputTensor, 3)
+  const inpaintedPixels = tensorToPixels(outputTensor)
+
+  // 1. AI 结果 → 原图尺寸 raw RGB
+  const { data: aiData } = await sharp(inpaintedPixels, {
+    raw: { width: 512, height: 512, channels: 3 },
+  }).resize(originalWidth, originalHeight, { fit: 'fill', kernel: 'lanczos3' })
+    .raw().toBuffer({ resolveWithObject: true })
+
+  // 2. mask → 原图尺寸 raw grayscale
+  const { data: maskData } = await sharp(maskBuffer)
+    .resize(originalWidth, originalHeight, { fit: 'fill' })
+    .greyscale().threshold(128)
+    .raw().toBuffer({ resolveWithObject: true })
+
+  // 3. 原图 → 原图尺寸 raw RGB（用于逐像素拷贝，零损失）
+  const { data: origData } = await sharp(originalImageBuffer)
+    .resize(originalWidth, originalHeight, { fit: 'fill' })
+    .removeAlpha()
+    .raw().toBuffer({ resolveWithObject: true })
+
+  // 4. 像素级融合：mask 区取 AI，非 mask 区逐字节拷贝原图
+  const total = originalWidth * originalHeight
+  const merged = new Uint8Array(total * 3)
+  for (let i = 0; i < total; i++) {
+    if (maskData[i] > 128) {
+      merged[i*3]=aiData[i*3]; merged[i*3+1]=aiData[i*3+1]; merged[i*3+2]=aiData[i*3+2]
+    } else {
+      merged[i*3]=origData[i*3]; merged[i*3+1]=origData[i*3+1]; merged[i*3+2]=origData[i*3+2]
+    }
   }
 
-  const inpainted512Buffer = await sharp(inpaintedPixels, {
-    raw: { width: 512, height: 512, channels: 3 },
-  })
-    .png()
-    .toBuffer()
-
-  // 2. 缩放回原始尺寸
-  const inpaintedFullBuffer = await sharp(inpainted512Buffer)
-    .resize(originalWidth, originalHeight, { fit: 'fill', kernel: 'lanczos3' })
-    .png()
-    .toBuffer()
-
-  // 3. 用 mask 合成：mask 区域用修复结果，其余保留原图
-  const maskFullBuffer = await sharp(maskBuffer)
-    .resize(originalWidth, originalHeight, { fit: 'fill' })
-    .greyscale()
-    .png()
-    .toBuffer()
-
-  return await sharp(originalImageBuffer)
-    .composite([
-      {
-        input: inpaintedFullBuffer,
-        blend: 'over',
-      },
-    ])
-    .png()
-    .toBuffer()
+  return await sharp(merged, {
+    raw: { width: originalWidth, height: originalHeight, channels: 3 },
+  }).png().toBuffer()
 }
 
 // ─── 注册 IPC Handler ───
 export function registerInpaintLaMaHandler(win: BrowserWindow) {
   ipcMain.handle('inpaint:lama', async (_event, payload: {
-    imageBuffer: Buffer
-    maskBuffer: Buffer
+    imageBuffer: ArrayBuffer
+    maskBuffer: ArrayBuffer
     options?: { upscale?: boolean }
   }) => {
     try {
-      console.log('[LaMa] 开始处理...')
+  console.log('[LaMa] ===== Request received =====')
+      // Electron IPC 传递的是 ArrayBuffer，Sharp 需要 Buffer
+      const imgBuf = Buffer.from(payload.imageBuffer)
+      const maskBuf = Buffer.from(payload.maskBuffer)
+
+      console.log('[LaMa] Processing...')
       const session = await getSession()
+      console.log(session.inputMetadata)
+      // 动态获取模型输入/输出名（不同 LaMa 版本名称可能不同）
+      const inputNames  = session.inputNames
+      const outputNames = session.outputNames
+      console.log('[LaMa] Model inputs:', inputNames, 'outputs:', outputNames)
+
+      const imgInputName = inputNames[0]   // 通常为 "image" 或 "input"
+      const maskInputName = inputNames[1]  // 通常为 "mask"
+      const outName = outputNames[0]       // 通常为 "output"
 
       // 预处理
-      const { tensor: imageTensor, originalWidth, originalHeight } = await preprocessImage(payload.imageBuffer)
-      const maskTensor = await preprocessMask(payload.maskBuffer)
+      const { tensor: imageTensor, originalWidth, originalHeight } = await preprocessImage(imgBuf)
+      const maskTensor = await preprocessMask(maskBuf)
 
-      // ONNX 推理
+      // ONNX 推理（使用模型实际名称）
       const imageOrt = new ort.Tensor('float32', imageTensor, [1, 3, 512, 512])
       const maskOrt = new ort.Tensor('float32', maskTensor, [1, 1, 512, 512])
 
-      console.log('[LaMa] 推理中...')
-      const results = await session.run({ image: imageOrt, mask: maskOrt })
-      const outputTensor = results.output.data as Float32Array
-      console.log('[LaMa] 推理完成')
+      console.log('[LaMa] Inferencing...')
+      const results = await session.run({
+        [imgInputName]: imageOrt,
+        [maskInputName]: maskOrt,
+      })
+      const outputTensor = (results[outName] as ort.Tensor).data as Float32Array
+      console.log('[LaMa] Inference done')
 
-      // 后处理
-      const resultBuffer = await postprocess(
-        outputTensor,
-        originalWidth,
-        originalHeight,
-        payload.imageBuffer,
-        payload.maskBuffer
+      const resultBuffer = await postprocessWithMask(
+        outputTensor, originalWidth, originalHeight, imgBuf, maskBuf
       )
 
       return { success: true, data: resultBuffer }

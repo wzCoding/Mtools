@@ -1,12 +1,11 @@
 /**
  * Konva 画布组件 —— 支持自由笔刷绘制水印遮罩
  * 用于高质量模式的选区绘制，导出 mask 图传给 LaMa 模型
+ * 交互按钮（撤销/清空/笔刷大小）由父组件统一管理
  */
 import { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { Stage, Layer, Image as KonvaImage, Line } from 'react-konva'
 import Konva from 'konva'
-import { Button, Slider, Space, message } from 'antd'
-import { UndoOutlined, ClearOutlined } from '@ant-design/icons'
 
 interface BrushStroke {
   id: number
@@ -23,6 +22,10 @@ interface KonvaCanvasProps {
   containerHeight: number
   /** 是否禁用交互 */
   disabled?: boolean
+  /** 笔刷大小（由父组件控制） */
+  brushSize?: number
+  /** 笔触变化回调，通知父组件更新按钮状态 */
+  onStrokesChange?: (hasStrokes: boolean) => void
 }
 
 export interface KonvaCanvasRef {
@@ -30,29 +33,27 @@ export interface KonvaCanvasRef {
   exportMask: () => string
   /** 清空所有笔触 */
   clearAll: () => void
+  /** 撤销最后一笔 */
+  undoLast: () => void
   /** 是否有绘制内容 */
   hasStrokes: () => boolean
 }
 
 const KonvaCanvas = forwardRef<KonvaCanvasRef, KonvaCanvasProps>(
-  ({ image, containerWidth, containerHeight, disabled = false }, ref) => {
+  ({ image, containerWidth, containerHeight, disabled = false, brushSize = 20, onStrokesChange }, ref) => {
     const stageRef = useRef<Konva.Stage>(null)
     const isDrawing = useRef(false)
     const strokeIdCounter = useRef(0)
 
     const [strokes, setStrokes] = useState<BrushStroke[]>([])
-    const [brushSize, setBrushSize] = useState(20)
 
     // 图片显示尺寸
     const [displaySize, setDisplaySize] = useState({ w: 0, h: 0, x: 0, y: 0 })
 
-    // 计算图片显示参数
+    // 计算图片显示参数（父组件已传入去除 padding 后的精确可用尺寸）
     useEffect(() => {
       if (!image || containerWidth <= 0) return
-      const padding = 32
-      const maxW = containerWidth - padding
-      const maxH = containerHeight - padding
-      const scale = Math.min(maxW / image.naturalWidth, maxH / image.naturalHeight, 1)
+      const scale = Math.min(containerWidth / image.naturalWidth, containerHeight / image.naturalHeight, 1)
       const w = Math.floor(image.naturalWidth * scale)
       const h = Math.floor(image.naturalHeight * scale)
       const x = Math.floor((containerWidth - w) / 2)
@@ -107,12 +108,16 @@ const KonvaCanvas = forwardRef<KonvaCanvasRef, KonvaCanvasProps>(
       return maskStage.toDataURL({ mimeType: 'image/png', pixelRatio: 1 })
     }, [strokes, displaySize, image])
 
-    // 暴露方法
+    // 暴露方法给父组件
+    const undoLast = () => setStrokes((prev) => prev.slice(0, -1))
+    const clearAll = () => setStrokes([])
+
     useImperativeHandle(ref, () => ({
       exportMask,
-      clearAll: () => setStrokes([]),
+      clearAll,
+      undoLast,
       hasStrokes: () => strokes.length > 0,
-    }), [exportMask, strokes])
+    }), [exportMask, strokes, undoLast])
 
     // 鼠标/触控事件
     const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
@@ -142,46 +147,15 @@ const KonvaCanvas = forwardRef<KonvaCanvasRef, KonvaCanvasProps>(
       isDrawing.current = false
     }
 
-    const undoLast = () => setStrokes((prev) => prev.slice(0, -1))
-    const clearAll = () => setStrokes([])
+    // 通知父组件笔触状态变化（驱动按钮可用性）
+    useEffect(() => {
+      onStrokesChange?.(strokes.length > 0)
+    }, [strokes.length, onStrokesChange])
 
     if (!image) return null
 
     return (
-      <div style={{ position: 'relative', width: containerWidth, height: containerHeight }}>
-        {/* 工具栏 */}
-        <div style={{
-          position: 'absolute',
-          top: 8,
-          left: 16,
-          zIndex: 10,
-          display: 'flex',
-          gap: 8,
-          alignItems: 'center',
-        }}>
-          <Space size="small">
-            <Button size="small" icon={<UndoOutlined />} onClick={undoLast} disabled={strokes.length === 0 || disabled}>
-              撤销笔触
-            </Button>
-            <Button size="small" icon={<ClearOutlined />} onClick={clearAll} disabled={strokes.length === 0 || disabled}>
-              清空
-            </Button>
-            <span style={{ fontSize: 12, color: '#888' }}>
-              笔刷大小:
-              <Slider
-                min={5}
-                max={60}
-                value={brushSize}
-                onChange={setBrushSize}
-                disabled={disabled}
-                style={{ width: 80, display: 'inline-block', marginLeft: 8 }}
-              />
-            </span>
-          </Space>
-        </div>
-
-        {/* Konva Stage */}
-        <Stage
+      <Stage
           ref={stageRef}
           width={containerWidth}
           height={containerHeight}
@@ -222,7 +196,6 @@ const KonvaCanvas = forwardRef<KonvaCanvasRef, KonvaCanvasProps>(
             ))}
           </Layer>
         </Stage>
-      </div>
     )
   }
 )

@@ -64,5 +64,7 @@ export default function handleIpcEvents(win: BrowserWindow) {
     });
 
     // ─── LaMa AI 去水印 ───
+    console.log('[LaMa] Registering IPC handler...')
     registerInpaintLaMaHandler(win);
+    console.log('[LaMa] IPC handler registered')
 }
