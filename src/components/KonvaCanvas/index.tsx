@@ -82,7 +82,6 @@ const KonvaCanvas = forwardRef<KonvaCanvasRef, KonvaCanvasProps>(
       })
       const maskLayer = new Konva.Layer()
       maskStage.add(maskLayer)
-
       // 计算缩放比（笔触坐标是显示坐标，需映射到原图坐标）
       const scaleX = (image?.naturalWidth ?? 1) / displaySize.w
       const scaleY = (image?.naturalHeight ?? 1) / displaySize.h
@@ -156,46 +155,46 @@ const KonvaCanvas = forwardRef<KonvaCanvasRef, KonvaCanvasProps>(
 
     return (
       <Stage
-          ref={stageRef}
-          width={containerWidth}
-          height={containerHeight}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleMouseDown}
-          onTouchMove={handleMouseMove}
-          onTouchEnd={handleMouseUp}
-          style={{ cursor: disabled ? 'default' : 'crosshair' }}
-        >
-          <Layer>
-            {/* 原图 */}
-            {konvaImage && (
-              <KonvaImage
-                image={konvaImage}
-                x={displaySize.x}
-                y={displaySize.y}
-                width={displaySize.w}
-                height={displaySize.h}
-              />
-            )}
-          </Layer>
-          <Layer>
-            {/* 笔触 — 半透明红色表示遮罩区域 */}
-            {strokes.map((stroke) => (
-              <Line
-                key={stroke.id}
-                points={stroke.points}
-                stroke="rgba(255, 77, 79, 0.55)"
-                strokeWidth={stroke.brushSize}
-                tension={0.5}
-                lineCap="round"
-                lineJoin="round"
-                globalCompositeOperation="source-over"
-              />
-            ))}
-          </Layer>
-        </Stage>
+        ref={stageRef}
+        width={containerWidth}
+        height={containerHeight}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleMouseDown}
+        onTouchMove={handleMouseMove}
+        onTouchEnd={handleMouseUp}
+        style={{ cursor: disabled ? 'default' : 'crosshair' }}
+      >
+        <Layer>
+          {/* 原图 */}
+          {konvaImage && (
+            <KonvaImage
+              image={konvaImage}
+              x={displaySize.x}
+              y={displaySize.y}
+              width={displaySize.w}
+              height={displaySize.h}
+            />
+          )}
+        </Layer>
+        <Layer>
+          {/* 笔触 — 半透明红色表示遮罩区域 */}
+          {strokes.map((stroke) => (
+            <Line
+              key={stroke.id}
+              points={stroke.points}
+              stroke="rgba(255, 77, 79, 0.55)"
+              strokeWidth={stroke.brushSize}
+              tension={0.5}
+              lineCap="round"
+              lineJoin="round"
+              globalCompositeOperation="source-over"
+            />
+          ))}
+        </Layer>
+      </Stage>
     )
   }
 )

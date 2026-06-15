@@ -20,6 +20,7 @@ import {
 } from '@/utils/inpaint'
 import type { UploadFile } from 'antd'
 import KonvaCanvas, { type KonvaCanvasRef } from '@/components/KonvaCanvas'
+import ProcessingOverlay from '@/components/ProcessingOverlay'
 import './index.less'
 
 /** 选区矩形 */
@@ -54,17 +55,20 @@ export default function ReWatermark() {
   const [algorithm, setAlgorithm] = useState<'telea' | 'ns'>('telea')
   const [viewMode, setViewMode] = useState<'before' | 'after'>('before')
   const [repairMode, setRepairMode] = useState<'fast' | 'quality'>('fast')
-  const [resultImageUrl, setResultImageUrl] = useState<string>('') // LaMa 模式结果 URL
-  const [brushSize, setBrushSize] = useState(20) // 高质量模式笔刷大小
+  const [resultImageUrl, setResultImageUrl] = useState<string>('')
+  const [brushSize, setBrushSize] = useState(20)
   const [hasKonvaStrokes, setHasKonvaStrokes] = useState(false)
-  const [workspaceSize, setWorkspaceSize] = useState({ w: 800, h: 500 }) // 缓存工作区尺寸
+  const [workspaceSize, setWorkspaceSize] = useState({ w: 800, h: 500 })
+  const [patchImage, setPatchImage] = useState<HTMLImageElement | null>(null)
+  const [patchRect, setPatchRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  const [processingProgress, setProcessingProgress] = useState<number | undefined>(undefined)
 
-  // --- Refs ---
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const resultCanvasRef = useRef<HTMLCanvasElement>(null)
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const rectIdCounter = useRef(0)
-  const konvaRef = useRef<KonvaCanvasRef>(null) // 高质量模式 Konva 实例
+  const konvaRef = useRef<KonvaCanvasRef>(null)
 
   // 图片在 canvas 上的显示参数
   const displayParams = useRef({ scale: 1, offsetX: 0, offsetY: 0, imgW: 0, imgH: 0 })
@@ -130,7 +134,7 @@ export default function ReWatermark() {
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-
+    
     // 使用缓存的尺寸，避免渲染抖动
     const maxW = workspaceSize.w - 32
     const maxH = workspaceSize.h - 32
@@ -187,23 +191,61 @@ export default function ReWatermark() {
   // --- 依赖变更时重绘 ---
   //    修复完成后（resultImageData 存在）点击「原图」→ 展示干净原图，不叠加选区
   useEffect(() => {
-    if (sourceImage && imageLoaded && viewMode === 'before') {
-      const showRects = !resultImageData
+    if (!sourceImage || !imageLoaded) return
+
+    if (viewMode === 'before') {
+      const showRects = repairMode === 'quality' ? !patchImage : !resultImageData
       drawImageToCanvas(showRects)
     }
-  }, [sourceImage, imageLoaded, rects, isDrawing, drawStart, drawCurrent, drawImageToCanvas, viewMode, resultImageData])
+  }, [sourceImage, imageLoaded, viewMode, repairMode, patchImage, resultImageData, rects, isDrawing, drawStart, drawCurrent, drawImageToCanvas])
 
   // --- 渲染结果图（与编辑区使用相同的显示尺寸）---
   useEffect(() => {
-    if (resultImageData && resultCanvasRef.current) {
-      const maxW = workspaceSize.w - 32
-      const maxH = workspaceSize.h - 32
+    if (!resultCanvasRef.current) return
+
+    const maxW = workspaceSize.w - 32
+    const maxH = workspaceSize.h - 32
+
+    if (resultImageData && viewMode === 'after') {
       const scale = Math.min(maxW / resultImageData.width, maxH / resultImageData.height, 1)
       const displayW = Math.floor(resultImageData.width * scale)
       const displayH = Math.floor(resultImageData.height * scale)
       renderImageDataToCanvas(resultCanvasRef.current, resultImageData, displayW, displayH)
     }
   }, [resultImageData, viewMode, workspaceSize])
+
+  useEffect(() => {
+    if (!patchImage || !patchRect || !canvasRef.current || !sourceImage) return
+    if (repairMode !== 'quality' || viewMode !== 'after') return
+
+    const canvas = canvasRef.current
+    const container = containerRef.current
+    if (!container) return
+
+    const maxW = workspaceSize.w - 32
+    const maxH = workspaceSize.h - 32
+    const imgW = sourceImage.naturalWidth
+    const imgH = sourceImage.naturalHeight
+    const scale = Math.min(maxW / imgW, maxH / imgH, 1)
+    const displayW = Math.floor(imgW * scale)
+    const displayH = Math.floor(imgH * scale)
+    const offsetX = Math.floor((maxW - displayW) / 2)
+    const offsetY = Math.floor((maxH - displayH) / 2)
+
+    canvas.width = maxW
+    canvas.height = maxH
+    const ctx = canvas.getContext('2d')!
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(sourceImage, offsetX, offsetY, displayW, displayH)
+    ctx.drawImage(
+      patchImage,
+      patchRect.x * scale + offsetX,
+      patchRect.y * scale + offsetY,
+      patchRect.w * scale,
+      patchRect.h * scale
+    )
+    displayParams.current = { scale, offsetX, offsetY, imgW, imgH }
+  }, [patchImage, patchRect, viewMode, repairMode, workspaceSize, sourceImage])
 
   // --- 上传图片 ---
   const handleFileChange = useCallback(async (info: { fileList: UploadFile[] }) => {
@@ -244,9 +286,11 @@ export default function ReWatermark() {
     const canvas = canvasRef.current
     if (!canvas) return { x: 0, y: 0 }
     const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
     }
   }
 
@@ -374,6 +418,7 @@ export default function ReWatermark() {
     }
 
     setIsProcessing(true)
+    setProcessingProgress(undefined)
     try {
       const result = await inpaintImage(sourceImage, rects, {
         inpaintRadius,
@@ -401,6 +446,7 @@ export default function ReWatermark() {
     }
 
     setIsProcessing(true)
+    setProcessingProgress(0)
     try {
       // 1. 导出 mask 图
       const maskDataUrl = konvaRef.current.exportMask()
@@ -408,7 +454,6 @@ export default function ReWatermark() {
 
       const maskResp = await fetch(maskDataUrl)
       const maskBuffer = await maskResp.arrayBuffer()
-
       // 2. 获取原图 Buffer
       const imgResp = await fetch(sourceImage.src)
       const imageBuffer = await imgResp.arrayBuffer()
@@ -429,32 +474,31 @@ export default function ReWatermark() {
         throw new Error(result.error || 'LaMa 处理失败')
       }
 
-      // 5. 结果 Buffer → ImageData → 渲染（合成结果：mask区=AI，其余=原图）
-      const resultBuf = result.data!
-      console.log('[Quality] 结果数据大小:', resultBuf.byteLength)
-      const blob = new Blob([resultBuf], { type: 'image/png' })
-      const url = URL.createObjectURL(blob)
-      setResultImageUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return url })
+      // 5. 主进程只返回 AI patch + 坐标，渲染进程用 Canvas 拼接原图（非涂抹区零损失）
+      const { patchBuffer, patchX, patchY, patchWidth, patchHeight } = result
+      console.log('[Quality] patch:', patchWidth, '×', patchHeight, 'at', patchX, ',', patchY)
 
-      const resultImg = new Image()
-      resultImg.onload = () => {
-        const tempCanvas = document.createElement('canvas')
-        tempCanvas.width = resultImg.naturalWidth
-        tempCanvas.height = resultImg.naturalHeight
-        const ctx = tempCanvas.getContext('2d')!
-        ctx.drawImage(resultImg, 0, 0)
-        const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height)
-        setResultImageData(imageData)
+      const patchBlob = new Blob([patchBuffer], { type: 'image/png' })
+      const patchUrl = URL.createObjectURL(patchBlob)
+      const img = new Image()
+      img.onload = () => {
+        URL.revokeObjectURL(patchUrl)
+        setPatchImage(img)
+        setPatchRect({ x: patchX, y: patchY, w: patchWidth, h: patchHeight })
         setViewMode('after')
+        setProcessingProgress(100)
         message.success('AI 水印去除完成！')
         setIsProcessing(false)
       }
-      resultImg.onerror = () => {
-        message.error('结果图片加载失败')
+      img.onerror = () => {
+        URL.revokeObjectURL(patchUrl)
+        setProcessingProgress(undefined)
+        message.error('Patch 加载失败')
         setIsProcessing(false)
       }
-      resultImg.src = url
+      img.src = patchUrl
     } catch (err: any) {
+      setProcessingProgress(undefined)
       message.error(`AI 处理失败: ${err.message}`)
       setIsProcessing(false)
     }
@@ -462,6 +506,28 @@ export default function ReWatermark() {
 
   // --- 下载结果 ---
   const handleDownload = async () => {
+    if (repairMode === 'quality' && patchImage && patchRect && sourceImage) {
+      const canvas = document.createElement('canvas')
+      canvas.width = sourceImage.naturalWidth
+      canvas.height = sourceImage.naturalHeight
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(sourceImage, 0, 0)
+      ctx.drawImage(patchImage, patchRect.x, patchRect.y, patchRect.w, patchRect.h)
+      const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/png'))
+      if (blob) {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `watermark-removed-${Date.now()}.png`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        message.success('下载成功')
+      }
+      return
+    }
+
     if (!resultCanvasRef.current) return
     try {
       const blob = await canvasToBlob(resultCanvasRef.current, 'image/png')
@@ -487,6 +553,8 @@ export default function ReWatermark() {
     setRectsHistory([])
     setResultImageData(null)
     setResultImageUrl('')
+    setPatchImage(null)
+    setPatchRect(null)
     setViewMode('before')
     konvaRef.current?.clearAll()
     setHasKonvaStrokes(false)
@@ -516,23 +584,23 @@ export default function ReWatermark() {
     if (repairMode === 'quality') {
       const maxW = workspaceSize.w - 32
       const maxH = workspaceSize.h - 32
-      if (viewMode === 'before') {
-        return (
-          <KonvaCanvas
-            ref={konvaRef}
-            image={sourceImage}
-            containerWidth={maxW}
-            containerHeight={maxH}
-            disabled={isProcessing}
-            brushSize={brushSize}
-            onStrokesChange={setHasKonvaStrokes}
-          />
-        )
-      }
       return (
-        <div className="rw-result-container" style={{ display: 'inline-block' }}>
-          <canvas ref={resultCanvasRef} className="rw-canvas rw-result-canvas" />
-        </div>
+        <>
+          <div style={{ display: viewMode === 'before' ? 'block' : 'none' }}>
+            <KonvaCanvas
+              ref={konvaRef}
+              image={sourceImage}
+              containerWidth={maxW}
+              containerHeight={maxH}
+              disabled={isProcessing}
+              brushSize={brushSize}
+              onStrokesChange={setHasKonvaStrokes}
+            />
+          </div>
+          <div style={{ display: viewMode === 'after' && patchImage ? 'block' : 'none' }}>
+            <canvas ref={canvasRef} className="rw-canvas" style={{ cursor: 'default' }} />
+          </div>
+        </>
       )
     }
 
@@ -642,7 +710,7 @@ export default function ReWatermark() {
                   icon={<UndoOutlined />}
                   onClick={undoLastRect}
                   disabled={
-                    isProcessing || !!resultImageData ||
+                    isProcessing || !!(resultImageData || patchImage) ||
                     (repairMode === 'fast' ? rectsHistory.length === 0 : !hasKonvaStrokes)
                   }
                 >
@@ -654,7 +722,7 @@ export default function ReWatermark() {
                   icon={<ClearOutlined />}
                   onClick={clearAllRects}
                   disabled={
-                    isProcessing || !!resultImageData ||
+                    isProcessing || !!(resultImageData || patchImage) ||
                     (repairMode === 'fast' ? rects.length === 0 : !hasKonvaStrokes)
                   }
                 >
@@ -663,13 +731,12 @@ export default function ReWatermark() {
               </Tooltip>
               <Button
                 type="primary"
-                icon={isProcessing ? <LoadingOutlined /> : <ScissorOutlined />}
+                icon={<ScissorOutlined />}
                 onClick={handleRemoveWatermark}
                 disabled={
-                  isProcessing || !!resultImageData ||
+                  isProcessing || !!(resultImageData || patchImage) ||
                   (repairMode === 'fast' ? rects.length === 0 : !hasKonvaStrokes)
                 }
-                loading={isProcessing}
                 danger
               >
                 {isProcessing ? '处理中...' : repairMode === 'quality' ? 'AI 去除水印' : '去除水印'}
@@ -677,7 +744,7 @@ export default function ReWatermark() {
             </>
           )}
 
-          {resultImageData && (
+          {(resultImageData || patchImage) && (
             <>
               <Space.Compact>
                 <Button type={viewMode === 'before' ? 'primary' : 'default'} onClick={() => setViewMode('before')}>
@@ -740,7 +807,7 @@ export default function ReWatermark() {
                   max={60}
                   value={brushSize}
                   onChange={setBrushSize}
-                  disabled={isProcessing || !!resultImageData}
+                  disabled={isProcessing || !!(resultImageData || patchImage)}
                   style={{ width: 150 }}
                 />
               </div>
@@ -763,8 +830,9 @@ export default function ReWatermark() {
       )}
 
       {/* 图片编辑区 */}
-      <div className="rw-workspace" ref={containerRef}>
+      <div className="rw-workspace" ref={containerRef} style={{ position: 'relative' }}>
         {renderWorkspace()}
+        <ProcessingOverlay visible={isProcessing} progress={processingProgress} />
       </div>
     </div>
   )

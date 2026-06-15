@@ -42,6 +42,21 @@ export default defineConfig({
 
       },
       {
+        entry: 'electron/ipc/ipc-inpaint-worker.ts',
+        vite: {
+          build: {
+            outDir: 'dist-electron/main',
+            rollupOptions: {
+              external: [
+                'sharp',
+                'onnxruntime-node',
+                'onnxruntime-common',
+              ],
+            },
+          },
+        },
+      },
+      {
         entry: 'electron/preload/index.ts',
         onstart(options) {
           options.reload()
