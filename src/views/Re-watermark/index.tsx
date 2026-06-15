@@ -7,7 +7,6 @@ import {
   ScissorOutlined,
   UndoOutlined,
   ClearOutlined,
-  LoadingOutlined,
   ThunderboltOutlined,
   ExperimentOutlined,
 } from '@ant-design/icons'
@@ -20,7 +19,7 @@ import {
 } from '@/utils/inpaint'
 import type { UploadFile } from 'antd'
 import KonvaCanvas, { type KonvaCanvasRef } from '@/components/KonvaCanvas'
-import ProcessingOverlay from '@/components/ProcessingOverlay'
+import { ProcessingOverlay } from '@/components/ProcessingOverlay'
 import './index.less'
 
 /** 选区矩形 */
@@ -134,7 +133,7 @@ export default function ReWatermark() {
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    
+
     // 使用缓存的尺寸，避免渲染抖动
     const maxW = workspaceSize.w - 32
     const maxH = workspaceSize.h - 32
@@ -634,7 +633,7 @@ export default function ReWatermark() {
     return (
       <div className="re-watermark">
         <div className="rw-loading">
-          <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
+          <Spin/>
           <p>正在加载 OpenCV 引擎...</p>
         </div>
       </div>
@@ -691,17 +690,6 @@ export default function ReWatermark() {
             }}
             disabled={isProcessing}
           />
-
-          {/* <Upload
-            accept="image/png,image/jpeg,image/webp,image/bmp"
-            showUploadList={false}
-            beforeUpload={() => false}
-            onChange={handleFileChange}
-          >
-            <Button type="primary" icon={<UploadOutlined />} disabled={isProcessing}>
-              上传图片
-            </Button>
-          </Upload> */}
 
           {sourceImage && (
             <>

@@ -11,7 +11,7 @@ import { exportToExcel } from '@/utils/exportExcel'
 import { CheckOutlined, StopOutlined, ReloadOutlined, ExportOutlined } from "@ant-design/icons"
 import type { TableColumn, ProcessInfo } from '@/type/index'
 import { VirtualList } from '@/components/VirtualList'
-
+import { ProcessingOverlay } from '@/components/ProcessingOverlay'
 const defaultColumnsLength = 5
 const columnList = handleTableColumns(columnsData, defaultColumnsLength)
 
@@ -272,9 +272,6 @@ export default function Home() {
                 if (nameMatch || descMatch || pidMatch) {
                     results.push(item)
                 }
-                // if (item.children?.length) {
-                //     searchTree(item.children)
-                // }
             }
         }
 
@@ -307,7 +304,9 @@ export default function Home() {
     ), [handleRefresh, handleExport])
 
     return (
+
         <div className="home">
+            <ProcessingOverlay visible={loading} tip={'加载中...'} loadingType='spin'/>
             <HeaderBar className="home-header" onSearch={handleSearch}>
                 {headerBarChildren}
             </HeaderBar>

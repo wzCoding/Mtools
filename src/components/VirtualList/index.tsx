@@ -2,7 +2,7 @@ import { useVirtualList } from "@/hooks/useVirtualList";
 import { useListLayout } from "@/hooks/useListLayout";
 import { dataProcessing } from "@/utils";
 import { Tooltip } from "antd";
-import { RightOutlined } from "@ant-design/icons";
+import { RightOutlined, FrownOutlined } from "@ant-design/icons";
 import type { ProcessInfo, TableColumn } from '@/type/index'
 import React from "react";
 import "./index.less"
@@ -59,7 +59,11 @@ export function VirtualList({ list, listConfig, columns, headerConfig }: Virtual
                 }
             </div>
             <div ref={container} className="virtual-list-content" style={{ height: `${containerHeight}px` }}>
-                {isEmpty && <div>暂无数据</div>}
+                {isEmpty &&
+                    <div className="no-data">
+                        <FrownOutlined className="no-data-icon"/>
+                        <span className="no-data-text">暂无数据...</span>
+                    </div>}
                 {!isEmpty && <div ref={content} style={contentStyle}>
                     {itemList.map((item: ProcessInfo) => {
                         const formatData = dataProcessing(item);
