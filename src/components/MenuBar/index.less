@@ -1,4 +1,4 @@
-.menu-bar{
+.menu-bar {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -7,11 +7,12 @@
     width: 48px;
     height: calc(100% - var(--padding-primary) * 2);
     position: relative;
-    border-right:1px solid var(--border-light);
+    border-right: 1px solid var(--border-light);
     background-color: var(--bg-primary);
     padding: var(--padding-primary) 0;
     box-sizing: border-box;
-    .menu-item{
+
+    .menu-item {
         width: 32px;
         height: 32px;
         cursor: pointer;
@@ -20,7 +21,8 @@
         justify-content: center;
         align-items: center;
         transition: background-color 0.3s ease;
-        &:hover{
+
+        &:hover {
             background-color: var(--action-hover);
         }
 
@@ -30,5 +32,30 @@
             background-color: var(--action-selected, #e6f4ff);
             color: var(--primary-color, #1677ff);
         }
+
+        &.menu-item-setting {
+            position: absolute;
+            bottom: calc(var(--padding-primary) / 2);
+
+            &:hover {
+                background-color: var(--action-selected, #e6f4ff);
+                color: var(--primary-color, #1677ff);
+            }
+        }
+    }
+}
+
+.menu-setting-item {
+    padding: var(--padding-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: calc(var(--gap) * 4);
+
+    .setting-item-title {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: var(--gap);
     }
 }

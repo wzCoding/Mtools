@@ -47,7 +47,7 @@ function createTray() {
         { label: '显示主界面', click: createWindow },
         { label: '退出程序', click: () => { app.quit() } }
     ])
-    tray.setToolTip('Process View')
+    tray.setToolTip('Mtools')
     tray.setContextMenu(contextMenu)
 }
 

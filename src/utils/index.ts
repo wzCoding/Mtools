@@ -122,7 +122,6 @@ const handleProcessesGroup = async (list: ProcessInfo[]): Promise<ProcessInfo[]>
         p.description = fileDescription.get(p.name as string)?.description;
         p.memory = Number(((workingSet as number) / 1024 / 1024).toFixed(2)); // 转为 MB
         p.cpu = computedCpuUsage(p.pid!, processCpuTimes, deltaSystemCpuTimes);
-        p.action = '结束进程';
         p.id = `${p.pid}-${i}`;
         p.level = 0
 

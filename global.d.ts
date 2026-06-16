@@ -1,7 +1,14 @@
-declare module 'virtual:svg-icons-register';
+declare module 'virtual:svg-icons-register' {
+  const component: any
+  export default component
+}
 
 declare global {
+    /** 全局翻译函数，等价于 i18n.t */
+    var $t: (key: string, options?: Record<string, unknown>) => string
     interface Window {
+        /** 全局翻译函数 */
+        $t: (key: string, options?: Record<string, unknown>) => string
         bridgeApis: {
             maximize: () => void;
             minimize: () => void;
