@@ -17,16 +17,16 @@ export default function TitleBar() {
         <div className="title-bar">
             <div className="title-bar-drag-region">
                 <img src={logo} alt="logo" />
-                <span className="title-bar-title">Process View</span>
+                <span className="title-bar-title">Mtools</span>
             </div>
             <div className="title-bar-buttons">
-                <button onClick={handleMinimize} className="title-bar-button minimize" title="最小化">
+                <button onClick={handleMinimize} className="title-bar-button minimize" title={$t('minimize')}>
                     <SvgIcon name="minimize" color='#303133' />
                 </button>
-                <button onClick={handleMaximize} className="title-bar-button maximize" title="最大化">
+                <button onClick={handleMaximize} className="title-bar-button maximize" title={$t('maximize')}>
                     <SvgIcon name="maximize" color='#303133' />
                 </button>
-                <button onClick={handleClose} className="title-bar-button close" title="关闭">
+                <button onClick={handleClose} className="title-bar-button close" title={$t('close')}>
                     <SvgIcon name="close" color='#303133' />
                 </button>
             </div>

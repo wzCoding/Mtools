@@ -16,24 +16,24 @@ const flattenAll = (list: ProcessInfo[], level: number = 0): ProcessInfo[] => {
 /** 列定义 */
 interface ColumnDef {
     header: string;
-    key: keyof ProcessInfo | 'typeDisplay';
+    key: keyof ProcessInfo | 'type';
     width: number;
 }
 
 const COLUMNS: ColumnDef[] = [
-    { header: '名称', key: 'description', width: 28 },
-    { header: '类型', key: 'typeDisplay', width: 12 },
-    { header: 'CPU', key: 'cpu', width: 12 },
-    { header: '内存', key: 'memory', width: 14 },
-    { header: '进程', key: 'name', width: 22 },
-    { header: 'PID', key: 'pid', width: 12 },
+    { header: $t('description'), key: 'description', width: 28 },
+    { header: $t('type'), key: 'type', width: 12 },
+    { header: $t('cpu'), key: 'cpu', width: 12 },
+    { header: $t('memory'), key: 'memory', width: 14 },
+    { header: $t('name'), key: 'name', width: 22 },
+    { header: $t('pid'), key: 'pid', width: 12 },
 ];
 
 /** 获取单元格显示值 */
 const getCellValue = (item: ProcessInfo, key: ColumnDef['key']): string | number => {
     switch (key) {
-        case 'typeDisplay':
-            return item.type === 'app' ? '应用' : '后台程序';
+        case 'type':
+            return item.type === 'app' ? $t('p-app') : $t('p-background');
         case 'description':
             // 树形缩进：每级加 3 个空格
             const indent = '   '.repeat(item.level ?? 0);
@@ -59,7 +59,7 @@ export const exportToExcel = async (data: ProcessInfo[]): Promise<void> => {
     const flatList = flattenAll(data);
 
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('进程列表');
+    const sheet = workbook.addWorksheet($t('processing-list'));
 
     // 设置列宽
     sheet.columns = COLUMNS.map(col => ({
@@ -108,7 +108,7 @@ export const exportToExcel = async (data: ProcessInfo[]): Promise<void> => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `进程列表_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.download = `${$t('processing-list')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

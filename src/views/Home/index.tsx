@@ -5,6 +5,7 @@ import ContextMenu from '@/components/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { Button, Modal, message } from 'antd'
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import columnsData from '@/assets/json/columns.json'
 import { handleProcessesGroup, handleTableColumns, getDataFingerprint, getSystemCpuUsage, formatUptime, formatMemory } from '@/utils'
 import { exportToExcel } from '@/utils/exportExcel'
@@ -16,20 +17,21 @@ const defaultColumnsLength = 5
 const columnList = handleTableColumns(columnsData, defaultColumnsLength)
 
 const killMessage = {
-    0: '进程结束失败，未知错误',
-    1: '已结束进程',
-    2: '权限不足，请以管理员身份运行后再试',
+    0: 'fail-kill-process',
+    1: 'has-kill-process',
+    2: 'no-permission',
 }
 
 let groupedData: ProcessInfo[] = [];
 
 export default function Home() {
     console.log('render')
+    useTranslation()
     const { show, x, y, onOpen, onClose, menuRef } = useContextMenu();
     const [processesData, setProcessesData] = useState<ProcessInfo[]>([]);
     const [searchData, setSearchData] = useState<ProcessInfo[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [modalConfig, setModalConfig] = useState({ title: '操作提示', open: false, loading: false, content: '', pid: 0 })
+    const [modalConfig, setModalConfig] = useState({ title: 'operation-tip', open: false, loading: false, content: '', pid: 0 })
     const [tableColumn, setTableColumn] = useState<TableColumn[]>(columnList)
     const [showSearch, setShowSearch] = useState<boolean>(false)
     const pollingTimer = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -138,7 +140,7 @@ export default function Home() {
         const target = onContextItem.current as HTMLElement | null
         const pid = target?.getAttribute('data-pid')
         const desc = target?.getAttribute('data-desc')
-        setModalConfig(prev => ({ ...prev, open: true, content: `是否结束进程：${desc} (PID: ${pid})?`, pid: Number(pid) }));
+        setModalConfig(prev => ({ ...prev, open: true, content: `${$t('is-kill-process')}：${desc} (PID: ${pid})?`, pid: Number(pid) }));
     }
 
     const handleToggleColumn = useCallback((item: TableColumn) => {
@@ -161,7 +163,7 @@ export default function Home() {
     }), [tableColumn, handleToggleColumn]);
 
     const listItemContext = useMemo(() => (
-        <div className='list-item-context' onClick={killProcessByPid}><StopOutlined /><p>结束进程</p></div>
+        <div className='list-item-context' onClick={killProcessByPid}><StopOutlined /><p>{$t('kill-process')}</p></div>
     ), [])
     const contextMenuRender = useRef<React.ReactNode>(headerContext)
 
@@ -169,15 +171,15 @@ export default function Home() {
     const handleKillResult = (res: number) => {
         switch (res) {
             case 0:
-                message.error(killMessage[0]);
+                message.error($t(killMessage[0]));
                 break;
             case 1:
-                message.success(killMessage[1]);
+                message.success($t(killMessage[1]));
                 break;
             case 2:
-                message.warning(killMessage[2]);
+                message.warning($t(killMessage[2]));
                 break;
-            default: message.error(killMessage[0]);
+            default: message.error($t(killMessage[0]));
         }
     }
 
@@ -199,15 +201,15 @@ export default function Home() {
 
         return [
             {
-                title: 'CPU TOTAL',
+                title: $t('CPU-TOTAL'),
                 content: <div className='content-box'>
                     <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{cpuUsage.toFixed(1)}%</span>
-                    <span style={{ color: cpuUsage > 80 ? 'var(--error-color)' : 'var(--success-color)', fontSize: '12px' }}>{cpuUsage > 80 ? 'HIGH' : 'STABLE'}</span>
+                    <span style={{ color: cpuUsage > 80 ? 'var(--error-color)' : 'var(--success-color)', fontSize: '12px' }}>{cpuUsage > 80 ? $t('HIGH') : $t('STABLE')}</span>
                 </div>,
                 style: { width: '100%', height: '64px' }
             },
             {
-                title: 'MEM TOTAL',
+                title: $t('MEM-TOTAL'),
                 content: <div className='content-box'>
                     <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'calc(var(--padding-secondary) * 0.5)' }}>{usedVal}</span>
                     <span style={{ fontSize: '12px', color: 'var(--text-secondary)', paddingRight: 'calc(var(--padding-secondary) * 0.5)' }}>{usedUnit}</span>
@@ -217,18 +219,18 @@ export default function Home() {
                 style: { width: '100%', height: '64px' }
             },
             {
-                title: 'PROCESSES',
+                title: $t('PROCESSES'),
                 content: <div className='content-box'>
                     <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{processCount}</span>
-                    <span style={{ color: 'var(--success-color)', fontSize: '12px' }}>{activeProcessCount} ACTIVE</span>
+                    <span style={{ color: 'var(--success-color)', fontSize: '12px' }}>{activeProcessCount} {$t('ACTIVE')}</span>
                 </div>,
                 style: { width: '100%', height: '64px' }
             },
             {
-                title: 'UPTIME',
+                title: $t('UPTIME'),
                 content: <div className='content-box'>
                     <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{formatUptime(uptime)}</span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{uptime > 0 ? 'RUNNING' : ''}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{uptime > 0 ? `${$t('RUNNING')}` : ''}</span>
                 </div>,
                 style: { width: '100%', height: '64px' }
             },
@@ -297,16 +299,16 @@ export default function Home() {
     const headerBarChildren = useMemo(() => (
         <div className='header-bar-right'>
             <Button type="default" color="default" variant="filled" className='refresh-button' icon={<ReloadOutlined />} onClick={handleRefresh}>
-                refresh
+                {$t('refresh')}
             </Button>
-            <Button type="default" color="default" variant="filled" className='thrmr-button' icon={<ExportOutlined />} onClick={handleExport}>export</Button>
+            <Button type="default" color="default" variant="filled" className='thrmr-button' icon={<ExportOutlined />} onClick={handleExport}>{$t('export')}</Button>
         </div>
     ), [handleRefresh, handleExport])
 
     return (
 
         <div className="home">
-            <ProcessingOverlay visible={loading} tip={'加载中...'} loadingType='spin'/>
+            <ProcessingOverlay visible={loading} tip={`${$t('loading')}...`} loadingType='spin' />
             <HeaderBar className="home-header" onSearch={handleSearch}>
                 {headerBarChildren}
             </HeaderBar>
@@ -328,7 +330,7 @@ export default function Home() {
                     {contextMenuRender.current}
                 </ContextMenu>
                 <Modal
-                    title={modalConfig.title}
+                    title={$t(modalConfig.title)}
                     open={modalConfig.open}
                     confirmLoading={modalConfig.loading}
                     onOk={handleOk}

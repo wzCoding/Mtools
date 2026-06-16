@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Slider, Radio, Upload, message, Spin, Space, Tooltip, Segmented, Modal } from 'antd'
 import {
   UploadOutlined,
@@ -33,11 +34,14 @@ interface SelectionRect {
 
 /** 修复算法选项 */
 const ALGORITHM_OPTIONS = [
-  { label: 'Telea（快速，推荐）', value: 'telea' },
-  { label: 'Navier-Stokes（高质量）', value: 'ns' },
+  { label: `Telea（${$t('Telea')}）`, value: 'telea' },
+  { label: `Navier-Stokes（${$t('Navier-Stokes')}）`, value: 'ns' },
 ]
 
 export default function ReWatermark() {
+  // --- 订阅语言变更 ---
+  useTranslation()
+
   // --- 状态 ---
   const [cvLoading, setCvLoading] = useState(true)
   const [cvError, setCvError] = useState('')
@@ -253,13 +257,13 @@ export default function ReWatermark() {
     // 校验类型
     const validTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/bmp']
     if (!validTypes.includes(file.type)) {
-      message.error('请上传 PNG / JPEG / WebP / BMP 格式的图片')
+      message.error($t('image-upload-tip'))
       return
     }
 
     // 校验大小（最大 50MB）
     if (file.size > 50 * 1024 * 1024) {
-      message.error('图片大小不能超过 50MB')
+      message.error($t('image-size-tip'))
       return
     }
 
@@ -274,9 +278,9 @@ export default function ReWatermark() {
       setViewMode('before')
       konvaRef.current?.clearAll()
       setHasKonvaStrokes(false)
-      message.success('图片加载成功，请在图片上框选水印区域')
+      message.success($t('image-upload-success-tip'))
     } catch {
-      message.error('图片加载失败，请重试')
+      message.error($t('fail-load-image'))
     }
   }, [])
 
@@ -395,15 +399,15 @@ export default function ReWatermark() {
   // --- 执行去水印（快速模式：OpenCV）---
   const handleRemoveWatermark = async () => {
     if (!sourceImage) {
-      message.warning('请先上传图片')
+      message.warning($t('upload-image-first'))
       return
     }
     if (repairMode === 'fast' && rects.length === 0) {
-      message.warning('请先框选水印区域')
+      message.warning($t('select-watermark-first'))
       return
     }
     if (repairMode === 'quality' && !hasKonvaStrokes) {
-      message.warning('请先在图片上涂抹水印区域')
+      message.warning($t('stroke-watermark-first'))
       return
     }
 
@@ -412,7 +416,7 @@ export default function ReWatermark() {
     }
 
     if (!isCVReady()) {
-      message.error('OpenCV 尚未就绪，请等待加载完成')
+      message.error($t('opencv-unload'))
       return
     }
 
@@ -425,9 +429,9 @@ export default function ReWatermark() {
       })
       setResultImageData(result)
       setViewMode('after')
-      message.success('水印去除完成！')
+      message.success(`${$t('remove-watermark-success')}！`)
     } catch (err: any) {
-      message.error(`处理失败: ${err.message}`)
+      message.error(`${$t('fail-handle')}: ${err.message}`)
     } finally {
       setIsProcessing(false)
     }
@@ -436,11 +440,11 @@ export default function ReWatermark() {
   // --- 执行去水印（高质量模式：LaMa AI）---
   const handleRemoveWatermarkQuality = async () => {
     if (!sourceImage || !konvaRef.current) {
-      message.warning('请先在图片上涂抹水印区域')
+      message.warning($t('stroke-watermark-first'))
       return
     }
     if (!konvaRef.current.hasStrokes()) {
-      message.warning('请先在图片上涂抹水印区域')
+      message.warning($t('stroke-watermark-first'))
       return
     }
 
@@ -461,7 +465,7 @@ export default function ReWatermark() {
       // 3. 检查 bridgeApis 是否可用
       if (!window.bridgeApis?.inpaintLaMa) {
         console.error('[Quality] window.bridgeApis 不可用:', window.bridgeApis)
-        throw new Error('应用通信桥未就绪，请重启应用后重试')
+        throw new Error($t('bridge-apis-unready'))
       }
 
       // 4. 调用 IPC → 主进程 LaMa 推理
@@ -470,7 +474,7 @@ export default function ReWatermark() {
       console.log('[Quality] IPC 返回:', result.success, result.error || '')
 
       if (!result.success) {
-        throw new Error(result.error || 'LaMa 处理失败')
+        throw new Error(result.error || $t('Lama-fail-handle'))
       }
 
       // 5. 主进程只返回 AI patch + 坐标，渲染进程用 Canvas 拼接原图（非涂抹区零损失）
@@ -486,19 +490,19 @@ export default function ReWatermark() {
         setPatchRect({ x: patchX, y: patchY, w: patchWidth, h: patchHeight })
         setViewMode('after')
         setProcessingProgress(100)
-        message.success('AI 水印去除完成！')
+        message.success(`${$t('AI-remove-watermark-success')}！`)
         setIsProcessing(false)
       }
       img.onerror = () => {
         URL.revokeObjectURL(patchUrl)
         setProcessingProgress(undefined)
-        message.error('Patch 加载失败')
+        message.error(`${$t('fail-load-patch')}！`)
         setIsProcessing(false)
       }
       img.src = patchUrl
     } catch (err: any) {
       setProcessingProgress(undefined)
-      message.error(`AI 处理失败: ${err.message}`)
+      message.error(`${$t('fail-AI-handle')}: ${err.message}`)
       setIsProcessing(false)
     }
   }
@@ -522,7 +526,7 @@ export default function ReWatermark() {
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
-        message.success('下载成功')
+        message.success($t('success-download'))
       }
       return
     }
@@ -538,9 +542,9 @@ export default function ReWatermark() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      message.success('下载成功')
+      message.success($t('success-download'))
     } catch {
-      message.error('下载失败')
+      message.error($t('fail-downlaod'))
     }
   }
 
@@ -572,8 +576,8 @@ export default function ReWatermark() {
           >
             <div className="rw-drop-zone">
               <UploadOutlined style={{ fontSize: 48, color: '#bbb' }} />
-              <p>点击或拖拽图片到此处</p>
-              <p className="rw-drop-sub">支持 PNG / JPEG / WebP / BMP，最大 50MB</p>
+              <p>{$t('click-or-drag-image')}</p>
+              <p className="rw-drop-sub">{$t('image-tip')}</p>
             </div>
           </Upload>
         </div>
@@ -634,7 +638,7 @@ export default function ReWatermark() {
       <div className="re-watermark">
         <div className="rw-loading">
           <Spin/>
-          <p>正在加载 OpenCV 引擎...</p>
+          <p>{`${$t('opencv-loading')}...`}</p>
         </div>
       </div>
     )
@@ -645,10 +649,10 @@ export default function ReWatermark() {
     return (
       <div className="re-watermark">
         <div className="rw-error">
-          <p>引擎加载失败</p>
+          <p>{$t('fail-load-opencv')}</p>
           <p className="rw-error-detail">{cvError}</p>
           <Button type="primary" onClick={() => window.location.reload()}>
-            重新加载
+            {$t('reload')}
           </Button>
         </div>
       </div>
@@ -663,8 +667,8 @@ export default function ReWatermark() {
           {/* 模式切换 */}
           <Segmented
             options={[
-              { label: '快速模式', value: 'fast', icon: <ThunderboltOutlined /> },
-              { label: 'AI 高质量', value: 'quality', icon: <ExperimentOutlined /> },
+              { label: $t('fast'), value: 'fast', icon: <ThunderboltOutlined /> },
+              { label: $t('quality'), value: 'quality', icon: <ExperimentOutlined /> },
             ]}
             value={repairMode}
             onChange={(val) => {
@@ -678,10 +682,10 @@ export default function ReWatermark() {
               }
 
               Modal.confirm({
-                title: '切换模式',
-                content: `切换到「${newMode === 'fast' ? '快速模式' : 'AI 高质量'}」将重置当前图片和所有操作，是否继续？`,
-                okText: '确认切换',
-                cancelText: '取消',
+                title: $t('switch-mode'),
+                content: `${$t('switch-to')}「${newMode === 'fast' ? $t('fast') : $t('quality')}」${$t('switch-tip')}？`,
+                okText: $t('ok'),
+                cancelText: $t('cancel'),
                 onOk: () => {
                   setRepairMode(newMode)
                   handleReset()
@@ -693,7 +697,7 @@ export default function ReWatermark() {
 
           {sourceImage && (
             <>
-              <Tooltip title="撤销上一次操作">
+              <Tooltip title={$t('revoke-last')}>
                 <Button
                   icon={<UndoOutlined />}
                   onClick={undoLastRect}
@@ -702,10 +706,10 @@ export default function ReWatermark() {
                     (repairMode === 'fast' ? rectsHistory.length === 0 : !hasKonvaStrokes)
                   }
                 >
-                  撤销
+                 {$t('revoke')}
                 </Button>
               </Tooltip>
-              <Tooltip title="清空所有选区">
+              <Tooltip title={$t('clear-all')}>
                 <Button
                   icon={<ClearOutlined />}
                   onClick={clearAllRects}
@@ -714,7 +718,7 @@ export default function ReWatermark() {
                     (repairMode === 'fast' ? rects.length === 0 : !hasKonvaStrokes)
                   }
                 >
-                  清空
+                  {$t('clear')}
                 </Button>
               </Tooltip>
               <Button
@@ -727,7 +731,7 @@ export default function ReWatermark() {
                 }
                 danger
               >
-                {isProcessing ? '处理中...' : repairMode === 'quality' ? 'AI 去除水印' : '去除水印'}
+                {isProcessing ? `${$t('handling')}...` : repairMode === 'quality' ? $t('AI-remove-watermark') : $t('remove-watermark')}
               </Button>
             </>
           )}
@@ -736,21 +740,21 @@ export default function ReWatermark() {
             <>
               <Space.Compact>
                 <Button type={viewMode === 'before' ? 'primary' : 'default'} onClick={() => setViewMode('before')}>
-                  原图
+                  {$t('origin-image')}
                 </Button>
                 <Button type={viewMode === 'after' ? 'primary' : 'default'} onClick={() => setViewMode('after')}>
-                  结果
+                  {$t('result-image')}
                 </Button>
               </Space.Compact>
               <Button icon={<DownloadOutlined />} onClick={handleDownload}>
-                下载结果
+                {$t('result-download')}
               </Button>
             </>
           )}
 
           {sourceImage && (
             <Button icon={<DeleteOutlined />} onClick={handleReset} disabled={isProcessing}>
-              重置
+              {$t('reset')}
             </Button>
           )}
         </Space>
@@ -763,8 +767,8 @@ export default function ReWatermark() {
             {repairMode === 'fast' ? (
               <>
                 <div className="rw-setting-item">
-                  <Tooltip title="修复时从水印周围多大范围内采样填充。值越小越精细，值越大越平滑但可能模糊细节" placement='right'>
-                    <span className="rw-setting-label">修复半径: {inpaintRadius}px</span>
+                  <Tooltip title={$t('radius-tip')} placement='right'>
+                    <span className="rw-setting-label">{$t('repair-radius')}: {inpaintRadius}px</span>
                   </Tooltip>
                   <Slider
                     min={1}
@@ -776,7 +780,7 @@ export default function ReWatermark() {
                   />
                 </div>
                 <div className="rw-setting-item">
-                  <span className="rw-setting-label">修复算法:</span>
+                  <span className="rw-setting-label">{$t('repair-algorithm')}:</span>
                   <Radio.Group
                     options={ALGORITHM_OPTIONS}
                     value={algorithm}
@@ -787,8 +791,8 @@ export default function ReWatermark() {
               </>
             ) : (
               <div className="rw-setting-item">
-                <Tooltip title="涂抹水印区域时的画笔粗细，数值越大覆盖范围越宽" placement='right'>
-                  <span className="rw-setting-label">笔刷大小: {brushSize}px</span>
+                <Tooltip title={$t('stroke-tip')} placement='right'>
+                  <span className="rw-setting-label">{$t('stroke-size')}: {brushSize}px</span>
                 </Tooltip>
                 <Slider
                   min={5}
@@ -807,7 +811,7 @@ export default function ReWatermark() {
       {/* 选区列表（仅快速模式 + 修复完成前） */}
       {repairMode === 'fast' && rects.length > 0 && !resultImageData && (
         <div className="rw-rect-list">
-          <span className="rw-rect-label">已选区域 ({rects.length}):</span>
+          <span className="rw-rect-label">{$t('selected-area')} ({rects.length}):</span>
           {rects.map((r) => (
             <span key={r.id} className="rw-rect-tag">
               [{r.x}, {r.y}, {r.width}×{r.height}]

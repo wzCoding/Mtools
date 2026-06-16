@@ -28,7 +28,7 @@ function loadScript(url: string): Promise<void> {
         .then(() => resolve())
         .catch(reject)
     }
-    script.onerror = () => reject(new Error(`无法加载 opencv.js: ${url}`))
+    script.onerror = () => reject(new Error(`${$t('fail-load-opencv')}: ${url}`))
 
     document.head.appendChild(script)
   })
@@ -41,7 +41,7 @@ function waitForCVReady(): Promise<void> {
   return new Promise((resolve, reject) => {
     const cv = (window as any).cv
     if (!cv) {
-      reject(new Error('cv 对象未挂载到 window'))
+      reject(new Error($t('opencv-unmounted')))
       return
     }
 
@@ -63,7 +63,7 @@ function waitForCVReady(): Promise<void> {
           resolve()
         } else if (attempts >= maxAttempts) {
           clearInterval(interval)
-          reject(new Error('OpenCV WASM 初始化超时'))
+          reject(new Error($t('opencv-timeout')))
         }
       }, 100)
     } else {
@@ -116,7 +116,7 @@ export function getCV(): any {
   if (typeof window !== 'undefined' && (window as any).cv) {
     return (window as any).cv
   }
-  throw new Error('OpenCV 尚未加载，请先调用 loadOpenCV()')
+  throw new Error($t('opencv-unload'))
 }
 
 /**

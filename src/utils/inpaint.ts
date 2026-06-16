@@ -32,7 +32,7 @@ export async function inpaintImage(
   //    cv.imread() 返回 RGBA 4 通道 Mat，但 cv.inpaint() 要求 1 或 3 通道
   const srcRGBA = cv.imread(imageSource)
   if (!srcRGBA || srcRGBA.empty()) {
-    throw new Error('无法读取图片数据')
+    throw new Error($t('cant-read-image'))
   }
 
   const imgWidth = srcRGBA.cols
@@ -81,7 +81,7 @@ export async function inpaintImage(
 
   const ctx = tempCanvas.getContext('2d')
   if (!ctx) {
-    throw new Error('无法创建 Canvas 2D 上下文')
+    throw new Error($t('cant-create-2d'))
   }
   const imageData = ctx.getImageData(0, 0, imgWidth, imgHeight)
 
@@ -143,10 +143,10 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
     reader.onload = (e) => {
       const img = new Image()
       img.onload = () => resolve(img)
-      img.onerror = () => reject(new Error('图片加载失败'))
+      img.onerror = () => reject(new Error($t('fail-load-image')))
       img.src = e.target?.result as string
     }
-    reader.onerror = () => reject(new Error('文件读取失败'))
+    reader.onerror = () => reject(new Error($t('fail-load-file')))
     reader.readAsDataURL(file)
   })
 }
@@ -154,12 +154,12 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
 /**
  * 从 Canvas 导出为 Blob（用于下载）
  */
-export function canvasToBlob(canvas: HTMLCanvasElement, type: 'image/png' | 'image/jpeg' = 'image/png', quality = 0.92): Promise<Blob> {
+export function canvasToBlob(canvas: HTMLCanvasElement, type: 'image/png' | 'image/jpeg' = 'image/png', quality = 0.98): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
         if (blob) resolve(blob)
-        else reject(new Error('Canvas 导出失败'))
+        else reject(new Error($t('fail-canvas-export')))
       },
       type,
       quality

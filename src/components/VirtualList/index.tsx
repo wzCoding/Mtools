@@ -53,7 +53,7 @@ export function VirtualList({ list, listConfig, columns, headerConfig }: Virtual
             <div className="virtual-list-header" onContextMenu={(e) => listConfig?.onContextMenu!(e, 'headerContext')} style={{ height: `${listConfig?.itemHeight || defaultItemHeight}px` }}>
                 {columns.map((col) => (
                     <div className="header-column" key={col.dataIndex} style={getCellStyle(col.dataIndex)}>
-                        {col.title}
+                        {$t(col.title)}
                     </div>
                 ))
                 }
@@ -62,7 +62,7 @@ export function VirtualList({ list, listConfig, columns, headerConfig }: Virtual
                 {isEmpty &&
                     <div className="no-data">
                         <FrownOutlined className="no-data-icon"/>
-                        <span className="no-data-text">暂无数据...</span>
+                        <span className="no-data-text">{$t('no-data')}...</span>
                     </div>}
                 {!isEmpty && <div ref={content} style={contentStyle}>
                     {itemList.map((item: ProcessInfo) => {
@@ -104,7 +104,6 @@ export function VirtualList({ list, listConfig, columns, headerConfig }: Virtual
                                     </Tooltip>
                                 ) : (<span className="list-cell cell-text" style={getCellStyle('name')}>{formatData.name}</span>)}
                                 <span className="list-cell" style={getCellStyle('pid')}>{formatData.pid}</span>
-                                {/* <span className="list-cell" style={getCellStyle('action')}>{formatData.action}</span> */}
                             </div>
                         )
                     })}

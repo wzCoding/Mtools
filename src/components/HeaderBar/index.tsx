@@ -14,7 +14,7 @@ function HeaderBar({ className, onSearch, children }: HeaderBarProps) {
     const { Search } = Input
     return (
         <div className={`${className} header-bar`}>
-            <Search className='header-search-input' prefix={<FileSearchOutlined />} placeholder="Search..." allowClear onSearch={onSearch} />
+            <Search className='header-search-input' prefix={<FileSearchOutlined />} placeholder={`${$t('search')}...`} allowClear onSearch={onSearch} />
             {children ? children : null}
         </div>
     )

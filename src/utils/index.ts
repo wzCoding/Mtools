@@ -75,7 +75,7 @@ const computedCpuUsage = (
 const dataProcessing = (data: ProcessInfo): ProcessInfoAlias => {
     return {
         ...data,
-        typeAlias: data.type === 'app' ? '应用' : '后台程序',
+        typeAlias: data.type === 'app' ?  $t('p-app') : $t('p-background'),
         cpuAlias: data.cpu ? `${formatDecimal(data.cpu)}%` : '0%',
         memoryAlias: data.memory ? `${formatDecimal(data.memory)} MB` : '0 MB',
     } as ProcessInfoAlias
@@ -244,7 +244,7 @@ const handleTableColumns = (columns: dataObj, showLength: number): TableColumn[]
         if (key === 'type') {
             column.render = (value: string) => {
                 const color = value === 'app' ? 'var(--success-color)' : 'var(--text-muted)';
-                const text = value === 'app' ? '应用' : '后台程序';
+                const text = value === 'app' ?  $t('p-app') : $t('p-background');
                 return React.createElement('span', { style: { color } }, text)
             }
         }

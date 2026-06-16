@@ -58,12 +58,12 @@ export interface RouteConfig {
 export const routes: RouteConfig[] = [
   {
     path: '/home',
-    title: '首页',
+    title: $t('home'),
     element: <LazyPage Component={Home} />,
   },
   {
     path: '/re-watermark',
-    title: '图片去水印',
+    title: $t('remove-watermark'),
     element: <LazyPage Component={ReWatermark} />,
   },
 ]

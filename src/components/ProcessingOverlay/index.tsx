@@ -9,7 +9,7 @@ interface ProcessingOverlayProps {
     loadingType?: 'progress' | 'spin'
 }
 
-export function ProcessingOverlay({ visible, progress, tip = 'AI 正在处理图片...', loadingType = 'progress' }: ProcessingOverlayProps) {
+export function ProcessingOverlay({ visible, progress, tip = `${$t('AI-processing')}...`, loadingType = 'progress' }: ProcessingOverlayProps) {
     const [simulated, setSimulated] = useState(0)
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 

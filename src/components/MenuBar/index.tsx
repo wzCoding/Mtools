@@ -1,64 +1,88 @@
 import { Button, Tooltip, Popover, Select, Switch } from 'antd'
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { PictureOutlined, AppstoreOutlined, SettingOutlined, TranslationOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import './index.less'
 
 const menus = [
     {
-        title: '首页',
+        title: 'home',
         icon: <AppstoreOutlined />,
         path: '/home'
     },
     {
-        title: '图片去水印',
+        title: 'remove-watermark',
         icon: <PictureOutlined />,
         path: '/re-watermark'
     },
 ]
 
-const settings = [
-    {
-        title: '语言',
-        icon: <TranslationOutlined />,
-        type: 'select',
-        options: [{ value: 'zh-CN', label: '中文' }, { value: 'en', label: '英语' }],
-        defaultValue: 'zh-CN',
-        key: 'lang'
-    },
-    {
-        title: '主题',
-        icon: <SunOutlined />,
-        type: 'switch',
-        checked: <SunOutlined />,
-        unchecked: <MoonOutlined />,
-        key: 'theme'
-    }
-]
-
-const settingsContent = settings.map((item) => {
-    return (
-        <div className='menu-setting-item' key={item.key}>
-            <div className='setting-item-title'>
-                {item.icon}
-                <span>{item.title}</span>
-            </div>
-            {item.type === 'select' && <Select className='setting-option' options={item.options} defaultValue={item.defaultValue}></Select>}
-            {item.type === 'switch' && <Switch className='setting-option' checkedChildren={item.checked}
-                unCheckedChildren={item.unchecked}
-                defaultChecked></Switch>}
-        </div>
-    )
-})
-
 export default function MenuBar() {
     const navigate = useNavigate()
     const location = useLocation()
 
-    const openSetting = () => { }
+    // 订阅语言变更，驱动组件重渲染
+    useTranslation()
+
+    /** 切换语言 */
+    const handleLangChange = useCallback((value: string) => {
+        i18n.changeLanguage(value)
+    }, [])
+
+    /** 设置项配置——放在组件内，语言切换时 $t() 重新求值 */
+    const settings = useMemo(() => [
+        {
+            title: 'language',
+            icon: <TranslationOutlined />,
+            type: 'select' as const,
+            options: [
+                { value: 'zh', label: $t('chinese') },
+                { value: 'en', label: $t('english') },
+            ],
+            defaultValue: i18n.language,
+            key: 'lang',
+            onChange: handleLangChange,
+        },
+        {
+            title: 'theme',
+            icon: <SunOutlined />,
+            type: 'switch' as const,
+            checked: <SunOutlined />,
+            unchecked: <MoonOutlined />,
+            key: 'theme',
+        },
+    ], [handleLangChange])
+
+    /** 设置面板内容 */
+    const settingsContent = useMemo(() => settings.map((item) => (
+        <div className='menu-setting-item' key={item.key}>
+            <div className='setting-item-title'>
+                {item.icon}
+                <span>{$t(item.title)}</span>
+            </div>
+            {item.type === 'select' && (
+                <Select
+                    className='setting-option'
+                    onChange={item.onChange}
+                    options={item.options}
+                    defaultValue={item.defaultValue}
+                />
+            )}
+            {item.type === 'switch' && (
+                <Switch
+                    className='setting-option'
+                    checkedChildren={item.checked}
+                    unCheckedChildren={item.unchecked}
+                    defaultChecked
+                />
+            )}
+        </div>
+    )), [settings])
+
     /** 当前激活的路径 */
     const activePath = useMemo(() => {
-        // 精确匹配 /home、/re-watermark
         const matched = menus.find((m) => location.pathname.startsWith(m.path))
         return matched?.path ?? ''
     }, [location.pathname])
@@ -76,7 +100,7 @@ export default function MenuBar() {
                             className={`menu-item${isActive ? ' menu-item--active' : ''}`}
                             onClick={() => navigate(item.path)}
                         >
-                            <Tooltip placement='right' title={item.title}>
+                            <Tooltip placement='right' title={$t(item.title)}>
                                 {item.icon}
                             </Tooltip>
                         </Button>
@@ -88,9 +112,8 @@ export default function MenuBar() {
                     key='setting'
                     type='text'
                     className={`menu-item menu-item-setting`}
-                    onClick={() => openSetting}
                 >
-                    <Tooltip placement='right' title={'设置'}>
+                    <Tooltip placement='right' title={$t('setting')}>
                         <SettingOutlined />
                     </Tooltip>
                 </Button>
