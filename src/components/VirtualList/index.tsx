@@ -4,6 +4,7 @@ import { dataProcessing } from "@/utils";
 import { Tooltip } from "antd";
 import { RightOutlined, FrownOutlined } from "@ant-design/icons";
 import type { ProcessInfo, TableColumn } from '@/type/index'
+import { useTranslation } from 'react-i18next'
 import React from "react";
 import "./index.less"
 
@@ -31,7 +32,7 @@ export function VirtualList({ list, listConfig, columns, headerConfig }: Virtual
 
     const { container, content, itemList, contentStyle, itemRefs, expandedIds, toggleExpand } = useVirtualList(list, listConfig?.itemHeight);
     const { columnWidth, containerHeight } = useListLayout(columns, { deviationWidth, deviationHeight });
-
+    const { t: $t } = useTranslation()
     const getCellStyle = (dataIndex: string, level?: string | number) => {
         const col = columns.find(col => col.dataIndex === dataIndex);
         const style: { [key: string]: string } = {
@@ -53,7 +54,7 @@ export function VirtualList({ list, listConfig, columns, headerConfig }: Virtual
             <div className="virtual-list-header" onContextMenu={(e) => listConfig?.onContextMenu!(e, 'headerContext')} style={{ height: `${listConfig?.itemHeight || defaultItemHeight}px` }}>
                 {columns.map((col) => (
                     <div className="header-column" key={col.dataIndex} style={getCellStyle(col.dataIndex)}>
-                        {$t(col.title)}
+                        {$t(col.dataIndex)}
                     </div>
                 ))
                 }
@@ -61,7 +62,7 @@ export function VirtualList({ list, listConfig, columns, headerConfig }: Virtual
             <div ref={container} className="virtual-list-content" style={{ height: `${containerHeight}px` }}>
                 {isEmpty &&
                     <div className="no-data">
-                        <FrownOutlined className="no-data-icon"/>
+                        <FrownOutlined className="no-data-icon" />
                         <span className="no-data-text">{$t('no-data')}...</span>
                     </div>}
                 {!isEmpty && <div ref={content} style={contentStyle}>

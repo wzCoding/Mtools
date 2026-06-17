@@ -13,6 +13,8 @@ import { CheckOutlined, StopOutlined, ReloadOutlined, ExportOutlined } from "@an
 import type { TableColumn, ProcessInfo } from '@/type/index'
 import { VirtualList } from '@/components/VirtualList'
 import { ProcessingOverlay } from '@/components/ProcessingOverlay'
+import i18n from '@/i18n'
+
 const defaultColumnsLength = 5
 const columnList = handleTableColumns(columnsData, defaultColumnsLength)
 
@@ -26,7 +28,7 @@ let groupedData: ProcessInfo[] = [];
 
 export default function Home() {
     console.log('render')
-    useTranslation()
+    const { t: $t } = useTranslation()
     const { show, x, y, onOpen, onClose, menuRef } = useContextMenu();
     const [processesData, setProcessesData] = useState<ProcessInfo[]>([]);
     const [searchData, setSearchData] = useState<ProcessInfo[]>([]);
@@ -158,9 +160,9 @@ export default function Home() {
     const headerContext = useMemo(() => tableColumn.map((item) => {
         return (<div className={`hide-columns ${item.key}`} key={item.key} onClick={() => handleToggleColumn(item)}>
             <CheckOutlined style={{ color: optionColors[Number(item.hidden)] }} />
-            <span>{item.title}</span>
+            <span>{$t(item.dataIndex)}</span>
         </div>)
-    }), [tableColumn, handleToggleColumn]);
+    }), [tableColumn, handleToggleColumn,i18n.language]);
 
     const listItemContext = useMemo(() => (
         <div className='list-item-context' onClick={killProcessByPid}><StopOutlined /><p>{$t('kill-process')}</p></div>
@@ -303,7 +305,7 @@ export default function Home() {
             </Button>
             <Button type="default" color="default" variant="filled" className='thrmr-button' icon={<ExportOutlined />} onClick={handleExport}>{$t('export')}</Button>
         </div>
-    ), [handleRefresh, handleExport])
+    ), [handleRefresh, handleExport,i18n.language])
 
     return (
 

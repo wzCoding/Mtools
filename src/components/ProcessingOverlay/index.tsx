@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Spin, Progress } from 'antd'
 import './index.less'
+import { useTranslation } from 'react-i18next'
 
 interface ProcessingOverlayProps {
     visible: boolean
@@ -9,10 +10,10 @@ interface ProcessingOverlayProps {
     loadingType?: 'progress' | 'spin'
 }
 
-export function ProcessingOverlay({ visible, progress, tip = `${$t('AI-processing')}...`, loadingType = 'progress' }: ProcessingOverlayProps) {
+export function ProcessingOverlay({ visible, progress, tip = 'AI-processing', loadingType = 'progress' }: ProcessingOverlayProps) {
     const [simulated, setSimulated] = useState(0)
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
+    const {t:$t} = useTranslation()
     useEffect(() => {
         if (!visible) {
             setSimulated(0)
@@ -62,7 +63,7 @@ export function ProcessingOverlay({ visible, progress, tip = `${$t('AI-processin
                     format={(p) => `${p}%`}
                 />}
                 {loadingType === 'spin' && <Spin></Spin>}
-                <span className='progress-tip'>{tip}</span>
+                <span className='progress-tip'>{$t(tip)}...</span>
             </div>
         </div>
     )

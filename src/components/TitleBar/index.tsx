@@ -1,9 +1,12 @@
 import SvgIcon from '@/components/SvgIcon'
 import './index.less'
+import { useTranslation } from 'react-i18next'
 
 const logo = '/electron.png'
 
 export default function TitleBar() {
+    const { t: $t } = useTranslation();
+    
     const handleMinimize = () => {
         window.bridgeApis.minimize();
     }

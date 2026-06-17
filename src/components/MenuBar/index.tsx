@@ -24,11 +24,12 @@ export default function MenuBar() {
     const location = useLocation()
 
     // 订阅语言变更，驱动组件重渲染
-    useTranslation()
+    const { t: $t } = useTranslation()
 
     /** 切换语言 */
     const handleLangChange = useCallback((value: string) => {
         i18n.changeLanguage(value)
+        console.log(i18n.language)
     }, [])
 
     /** 设置项配置——放在组件内，语言切换时 $t() 重新求值 */
@@ -41,7 +42,6 @@ export default function MenuBar() {
                 { value: 'zh', label: $t('chinese') },
                 { value: 'en', label: $t('english') },
             ],
-            defaultValue: i18n.language,
             key: 'lang',
             onChange: handleLangChange,
         },
@@ -53,7 +53,7 @@ export default function MenuBar() {
             unchecked: <MoonOutlined />,
             key: 'theme',
         },
-    ], [handleLangChange])
+    ], [handleLangChange,i18n.language])
 
     /** 设置面板内容 */
     const settingsContent = useMemo(() => settings.map((item) => (
@@ -67,7 +67,7 @@ export default function MenuBar() {
                     className='setting-option'
                     onChange={item.onChange}
                     options={item.options}
-                    defaultValue={item.defaultValue}
+                    value={i18n.language}
                 />
             )}
             {item.type === 'switch' && (
@@ -79,7 +79,7 @@ export default function MenuBar() {
                 />
             )}
         </div>
-    )), [settings])
+    )), [settings, i18n.language])
 
     /** 当前激活的路径 */
     const activePath = useMemo(() => {

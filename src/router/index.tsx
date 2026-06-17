@@ -2,16 +2,12 @@ import { lazy, Suspense, type ComponentType, type LazyExoticComponent, type Reac
 import { Spin } from 'antd'
 import { LoadingOutlined } from '@ant-design/icons'
 
-/**
- * 懒加载包装器
- */
 function lazyWithSuspense(
   importer: () => Promise<{ default: ComponentType<any> }>
 ): LazyExoticComponent<ComponentType<any>> {
   return lazy(importer)
 }
 
-/** 页面加载 fallback */
 function PageLoading() {
   return (
     <div style={{
@@ -25,7 +21,6 @@ function PageLoading() {
   )
 }
 
-/** 包装懒加载页面 */
 function LazyPage({ Component }: { Component: LazyExoticComponent<ComponentType<any>> }) {
   return (
     <Suspense fallback={<PageLoading />}>
@@ -34,7 +29,6 @@ function LazyPage({ Component }: { Component: LazyExoticComponent<ComponentType<
   )
 }
 
-// ──── 懒加载视图 ────
 const Home = lazyWithSuspense(() => import('@/views/Home'))
 const ReWatermark = lazyWithSuspense(() => import('@/views/Re-watermark'))
 
@@ -58,18 +52,16 @@ export interface RouteConfig {
 export const routes: RouteConfig[] = [
   {
     path: '/home',
-    title: $t('home'),
+    title: 'home',
     element: <LazyPage Component={Home} />,
   },
   {
     path: '/re-watermark',
-    title: $t('remove-watermark'),
+    title: 'remove-watermark',
     element: <LazyPage Component={ReWatermark} />,
   },
 ]
 
-/** 默认首页路径 */
 export const DEFAULT_PATH = '/home'
 
-/** 所有有效路径 */
 export const routePathSet = new Set(routes.map((r) => r.path))

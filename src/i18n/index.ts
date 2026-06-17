@@ -13,10 +13,8 @@ i18n
     },
   })
 
-/** 全局翻译函数，组件内外均可直接调用，无需引入 useTranslation */
 const $t = i18n.t.bind(i18n)
 
-// 挂载到 window，使项目中任意位置可直接使用 $t('xxx')
 window.$t = $t
 
 export { $t }

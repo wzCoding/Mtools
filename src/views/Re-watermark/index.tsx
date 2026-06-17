@@ -23,6 +23,12 @@ import KonvaCanvas, { type KonvaCanvasRef } from '@/components/KonvaCanvas'
 import { ProcessingOverlay } from '@/components/ProcessingOverlay'
 import './index.less'
 
+/** 修复算法选项 */
+const ALGORITHM_OPTIONS = [
+  { label: `Telea（${$t('Telea')}）`, value: 'telea' },
+  { label: `Navier-Stokes（${$t('Navier-Stokes')}）`, value: 'ns' },
+]
+
 /** 选区矩形 */
 interface SelectionRect {
   id: number
@@ -32,15 +38,9 @@ interface SelectionRect {
   height: number
 }
 
-/** 修复算法选项 */
-const ALGORITHM_OPTIONS = [
-  { label: `Telea（${$t('Telea')}）`, value: 'telea' },
-  { label: `Navier-Stokes（${$t('Navier-Stokes')}）`, value: 'ns' },
-]
-
 export default function ReWatermark() {
-  // --- 订阅语言变更 ---
-  useTranslation()
+
+  const { t: $t } = useTranslation()
 
   // --- 状态 ---
   const [cvLoading, setCvLoading] = useState(true)
@@ -58,7 +58,6 @@ export default function ReWatermark() {
   const [algorithm, setAlgorithm] = useState<'telea' | 'ns'>('telea')
   const [viewMode, setViewMode] = useState<'before' | 'after'>('before')
   const [repairMode, setRepairMode] = useState<'fast' | 'quality'>('fast')
-  const [resultImageUrl, setResultImageUrl] = useState<string>('')
   const [brushSize, setBrushSize] = useState(20)
   const [hasKonvaStrokes, setHasKonvaStrokes] = useState(false)
   const [workspaceSize, setWorkspaceSize] = useState({ w: 800, h: 500 })
@@ -68,7 +67,6 @@ export default function ReWatermark() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const resultCanvasRef = useRef<HTMLCanvasElement>(null)
-  const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const rectIdCounter = useRef(0)
   const konvaRef = useRef<KonvaCanvasRef>(null)
@@ -274,7 +272,6 @@ export default function ReWatermark() {
       setRects([])
       setRectsHistory([])
       setResultImageData(null)
-      setResultImageUrl('')
       setViewMode('before')
       konvaRef.current?.clearAll()
       setHasKonvaStrokes(false)
@@ -555,7 +552,6 @@ export default function ReWatermark() {
     setRects([])
     setRectsHistory([])
     setResultImageData(null)
-    setResultImageUrl('')
     setPatchImage(null)
     setPatchRect(null)
     setViewMode('before')
@@ -637,7 +633,7 @@ export default function ReWatermark() {
     return (
       <div className="re-watermark">
         <div className="rw-loading">
-          <Spin/>
+          <Spin />
           <p>{`${$t('opencv-loading')}...`}</p>
         </div>
       </div>
@@ -706,7 +702,7 @@ export default function ReWatermark() {
                     (repairMode === 'fast' ? rectsHistory.length === 0 : !hasKonvaStrokes)
                   }
                 >
-                 {$t('revoke')}
+                  {$t('revoke')}
                 </Button>
               </Tooltip>
               <Tooltip title={$t('clear-all')}>

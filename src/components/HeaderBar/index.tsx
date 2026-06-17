@@ -3,6 +3,7 @@ import './index.less'
 import React from 'react';
 import { Input } from 'antd';
 import { FileSearchOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 interface HeaderBarProps {
     className?: string,
@@ -11,6 +12,7 @@ interface HeaderBarProps {
 }
 
 function HeaderBar({ className, onSearch, children }: HeaderBarProps) {
+    const { t: $t } = useTranslation()
     const { Search } = Input
     return (
         <div className={`${className} header-bar`}>
