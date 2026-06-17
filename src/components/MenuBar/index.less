@@ -33,14 +33,9 @@
             color: var(--primary-color, #1677ff);
         }
 
-        &.menu-item-setting {
+        &:last-child {
             position: absolute;
             bottom: calc(var(--padding-primary) / 2);
-
-            &:hover {
-                background-color: var(--action-selected, #e6f4ff);
-                color: var(--primary-color, #1677ff);
-            }
         }
     }
 }
@@ -56,6 +51,11 @@
         display: flex;
         justify-content: flex-start;
         align-items: center;
-        gap: var(--gap);
+        gap: calc(var(--gap) * 2);
+    }
+    .setting-option{
+        &.select{
+            width: 120px;
+        }
     }
 }

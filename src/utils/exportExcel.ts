@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import type { ProcessInfo } from '@/type/index';
+import i18n from '@/i18n';
 
 /** 递归展开树形结构，所有层级全部平铺（默认全部展开） */
 const flattenAll = (list: ProcessInfo[], level: number = 0): ProcessInfo[] => {
@@ -20,7 +21,8 @@ interface ColumnDef {
     width: number;
 }
 
-const COLUMNS: ColumnDef[] = [
+/** 获取列定义（每次调用根据当前语言动态生成） */
+const getColumns = (): ColumnDef[] => [
     { header: $t('description'), key: 'description', width: 28 },
     { header: $t('type'), key: 'type', width: 12 },
     { header: $t('cpu'), key: 'cpu', width: 12 },
@@ -57,12 +59,13 @@ export const exportToExcel = async (data: ProcessInfo[]): Promise<void> => {
     if (!data || data.length === 0) return;
 
     const flatList = flattenAll(data);
+    const columns = getColumns();
 
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet($t('processing-list'));
 
     // 设置列宽
-    sheet.columns = COLUMNS.map(col => ({
+    sheet.columns = columns.map(col => ({
         header: col.header,
         key: col.key,
         width: col.width,
@@ -71,7 +74,7 @@ export const exportToExcel = async (data: ProcessInfo[]): Promise<void> => {
     // 写入数据行
     flatList.forEach(item => {
         const row: Record<string, string | number> = {};
-        for (const col of COLUMNS) {
+        for (const col of columns) {
             row[col.key] = getCellValue(item, col.key);
         }
         sheet.addRow(row);

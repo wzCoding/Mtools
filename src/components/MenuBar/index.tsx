@@ -1,12 +1,18 @@
-import { Button, Tooltip, Popover, Select, Switch } from 'antd'
-import { useMemo, useCallback } from 'react'
+import { Button, Tooltip, Modal, Select, Switch } from 'antd'
+import React, { useMemo, useCallback, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { PictureOutlined, AppstoreOutlined, SettingOutlined, TranslationOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 import './index.less'
 
-const menus = [
+interface MenuItem {
+    title: string,
+    icon: React.ReactNode,
+    path?: string
+}
+
+const menus: MenuItem[] = [
     {
         title: 'home',
         icon: <AppstoreOutlined />,
@@ -17,22 +23,24 @@ const menus = [
         icon: <PictureOutlined />,
         path: '/re-watermark'
     },
+    {
+        title: 'setting',
+        icon: <SettingOutlined />,
+    },
 ]
 
 export default function MenuBar() {
     const navigate = useNavigate()
     const location = useLocation()
 
-    // 订阅语言变更，驱动组件重渲染
     const { t: $t } = useTranslation()
 
     /** 切换语言 */
     const handleLangChange = useCallback((value: string) => {
         i18n.changeLanguage(value)
-        console.log(i18n.language)
+        window.bridgeApis?.changeLanguage(value)
     }, [])
 
-    /** 设置项配置——放在组件内，语言切换时 $t() 重新求值 */
     const settings = useMemo(() => [
         {
             title: 'language',
@@ -53,9 +61,8 @@ export default function MenuBar() {
             unchecked: <MoonOutlined />,
             key: 'theme',
         },
-    ], [handleLangChange,i18n.language])
+    ], [handleLangChange, i18n.language])
 
-    /** 设置面板内容 */
     const settingsContent = useMemo(() => settings.map((item) => (
         <div className='menu-setting-item' key={item.key}>
             <div className='setting-item-title'>
@@ -64,7 +71,7 @@ export default function MenuBar() {
             </div>
             {item.type === 'select' && (
                 <Select
-                    className='setting-option'
+                    className='setting-option select'
                     onChange={item.onChange}
                     options={item.options}
                     value={i18n.language}
@@ -72,7 +79,7 @@ export default function MenuBar() {
             )}
             {item.type === 'switch' && (
                 <Switch
-                    className='setting-option'
+                    className='setting-option switch'
                     checkedChildren={item.checked}
                     unCheckedChildren={item.unchecked}
                     defaultChecked
@@ -80,12 +87,19 @@ export default function MenuBar() {
             )}
         </div>
     )), [settings, i18n.language])
-
-    /** 当前激活的路径 */
+    const [showModal, setShowModal] = useState<boolean>(false)
     const activePath = useMemo(() => {
-        const matched = menus.find((m) => location.pathname.startsWith(m.path))
+        const matched = menus.find((m) => m.path && location.pathname.startsWith(m.path))
         return matched?.path ?? ''
     }, [location.pathname])
+
+    const handleMenuClick = (item: MenuItem) => {
+        if (item.path) {
+            navigate(item.path)
+        } else {
+            setShowModal(true)
+        }
+    }
 
     return (
         <div className="menu-bar">
@@ -98,7 +112,7 @@ export default function MenuBar() {
                             key={item.title}
                             type='text'
                             className={`menu-item${isActive ? ' menu-item--active' : ''}`}
-                            onClick={() => navigate(item.path)}
+                            onClick={() => handleMenuClick(item)}
                         >
                             <Tooltip placement='right' title={$t(item.title)}>
                                 {item.icon}
@@ -107,17 +121,9 @@ export default function MenuBar() {
                     )
                 })
             }
-            <Popover placement="topLeft" trigger="click" content={settingsContent}>
-                <Button
-                    key='setting'
-                    type='text'
-                    className={`menu-item menu-item-setting`}
-                >
-                    <Tooltip placement='right' title={$t('setting')}>
-                        <SettingOutlined />
-                    </Tooltip>
-                </Button>
-            </Popover>
+            <Modal open={showModal} title="Title" footer={null} onCancel={() => setShowModal(false)}>
+                {settingsContent}
+            </Modal>
         </div>
     )
 }

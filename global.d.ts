@@ -23,6 +23,7 @@ declare global {
             killProcess: (pid: number) => Promise<number>;
             getSystemUptime: () => Promise<number>;
             inpaintLaMa: (imageBuffer: ArrayBuffer, maskBuffer: ArrayBuffer) => Promise<any>
+            changeLanguage: (lang: string) => void
         };
     }
 }

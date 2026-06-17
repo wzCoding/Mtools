@@ -29,4 +29,7 @@ contextBridge.exposeInMainWorld("bridgeApis", {
             imageBuffer,
             maskBuffer,
         }),
+
+    // ─── 语言切换 ───
+    changeLanguage: (lang: string) => ipcRenderer.send("change-language", lang),
 });

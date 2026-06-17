@@ -29,6 +29,7 @@ let groupedData: ProcessInfo[] = [];
 export default function Home() {
     console.log('render')
     const { t: $t } = useTranslation()
+    const [messageApi, contextHolder] = message.useMessage()
     const { show, x, y, onOpen, onClose, menuRef } = useContextMenu();
     const [processesData, setProcessesData] = useState<ProcessInfo[]>([]);
     const [searchData, setSearchData] = useState<ProcessInfo[]>([]);
@@ -136,10 +137,10 @@ export default function Home() {
         }
     }, [])
 
-    const onContextItem = useRef<EventTarget | null>(null)
+    const contextElement = useRef<EventTarget | null>(null)
 
     const killProcessByPid = () => {
-        const target = onContextItem.current as HTMLElement | null
+        const target = contextElement.current as HTMLElement | null
         const pid = target?.getAttribute('data-pid')
         const desc = target?.getAttribute('data-desc')
         setModalConfig(prev => ({ ...prev, open: true, content: `${$t('is-kill-process')}：${desc} (PID: ${pid})?`, pid: Number(pid) }));
@@ -162,32 +163,33 @@ export default function Home() {
             <CheckOutlined style={{ color: optionColors[Number(item.hidden)] }} />
             <span>{$t(item.dataIndex)}</span>
         </div>)
-    }), [tableColumn, handleToggleColumn,i18n.language]);
+    }), [tableColumn, handleToggleColumn, i18n.language]);
 
     const listItemContext = useMemo(() => (
-        <div className='list-item-context' onClick={killProcessByPid}><StopOutlined /><p>{$t('kill-process')}</p></div>
-    ), [])
+        <div className='list-item-context' onClick={killProcessByPid}><StopOutlined color='red'/><p>{$t('kill-process')}</p></div>
+    ), [i18n.language])
     const contextMenuRender = useRef<React.ReactNode>(headerContext)
 
 
     const handleKillResult = (res: number) => {
         switch (res) {
             case 0:
-                message.error($t(killMessage[0]));
+                messageApi.error($t(killMessage[0]));
                 break;
             case 1:
-                message.success($t(killMessage[1]));
+                messageApi.success($t(killMessage[1]));
                 break;
             case 2:
-                message.warning($t(killMessage[2]));
+                messageApi.warning($t(killMessage[2]));
                 break;
-            default: message.error($t(killMessage[0]));
+            default: messageApi.error($t(killMessage[0]));
         }
     }
 
-    const handleOk = () => {
+    const handleOk = async () => {
         setModalConfig(prev => ({ ...prev, open: false }))
-        handleKillResult(0)
+        const result = await window.bridgeApis?.killProcess(modalConfig.pid)
+        handleKillResult(result)
     }
     const handleCancel = () => {
         setModalConfig(prev => ({ ...prev, open: false }))
@@ -246,7 +248,7 @@ export default function Home() {
             }
             if (type === 'itemContext') {
                 contextMenuRender.current = listItemContext
-                onContextItem.current = e.currentTarget
+                contextElement.current = e.currentTarget
             }
             onOpen?.(e)
         }
@@ -305,7 +307,7 @@ export default function Home() {
             </Button>
             <Button type="default" color="default" variant="filled" className='thrmr-button' icon={<ExportOutlined />} onClick={handleExport}>{$t('export')}</Button>
         </div>
-    ), [handleRefresh, handleExport,i18n.language])
+    ), [handleRefresh, handleExport, i18n.language])
 
     return (
 
@@ -328,7 +330,7 @@ export default function Home() {
                     <VirtualList list={searchData} columns={tableColumn} listConfig={listConfig}></VirtualList>
                 </div>
 
-                <ContextMenu style={{ width: '114px' }} show={show} x={x} y={y} onClose={onClose} menuRef={menuRef}>
+                <ContextMenu style={{ width: 'max-content' }} show={show} x={x} y={y} onClose={onClose} menuRef={menuRef}>
                     {contextMenuRender.current}
                 </ContextMenu>
                 <Modal
@@ -341,5 +343,6 @@ export default function Home() {
                     <p>{modalConfig.content}</p>
                 </Modal>
             </div>
+            {contextHolder}
         </div >)
 }

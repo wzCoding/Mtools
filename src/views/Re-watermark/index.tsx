@@ -23,13 +23,6 @@ import KonvaCanvas, { type KonvaCanvasRef } from '@/components/KonvaCanvas'
 import { ProcessingOverlay } from '@/components/ProcessingOverlay'
 import './index.less'
 
-/** 修复算法选项 */
-const ALGORITHM_OPTIONS = [
-  { label: `Telea（${$t('Telea')}）`, value: 'telea' },
-  { label: `Navier-Stokes（${$t('Navier-Stokes')}）`, value: 'ns' },
-]
-
-/** 选区矩形 */
 interface SelectionRect {
   id: number
   x: number
@@ -41,6 +34,7 @@ interface SelectionRect {
 export default function ReWatermark() {
 
   const { t: $t } = useTranslation()
+  const [messageApi, contextHolder] = message.useMessage()
 
   // --- 状态 ---
   const [cvLoading, setCvLoading] = useState(true)
@@ -70,6 +64,11 @@ export default function ReWatermark() {
   const containerRef = useRef<HTMLDivElement>(null)
   const rectIdCounter = useRef(0)
   const konvaRef = useRef<KonvaCanvasRef>(null)
+
+  const ALGORITHM_OPTIONS = [
+    { label: `Telea（${$t('Telea')}）`, value: 'telea' },
+    { label: `Navier-Stokes（${$t('Navier-Stokes')}）`, value: 'ns' },
+  ]
 
   // 图片在 canvas 上的显示参数
   const displayParams = useRef({ scale: 1, offsetX: 0, offsetY: 0, imgW: 0, imgH: 0 })
@@ -255,13 +254,13 @@ export default function ReWatermark() {
     // 校验类型
     const validTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/bmp']
     if (!validTypes.includes(file.type)) {
-      message.error($t('image-upload-tip'))
+      messageApi.error($t('image-upload-tip'))
       return
     }
 
     // 校验大小（最大 50MB）
     if (file.size > 50 * 1024 * 1024) {
-      message.error($t('image-size-tip'))
+      messageApi.error($t('image-size-tip'))
       return
     }
 
@@ -275,9 +274,9 @@ export default function ReWatermark() {
       setViewMode('before')
       konvaRef.current?.clearAll()
       setHasKonvaStrokes(false)
-      message.success($t('image-upload-success-tip'))
+      messageApi.success($t('image-upload-success-tip'))
     } catch {
-      message.error($t('fail-load-image'))
+      messageApi.error($t('fail-load-image'))
     }
   }, [])
 
@@ -396,15 +395,15 @@ export default function ReWatermark() {
   // --- 执行去水印（快速模式：OpenCV）---
   const handleRemoveWatermark = async () => {
     if (!sourceImage) {
-      message.warning($t('upload-image-first'))
+      messageApi.warning($t('upload-image-first'))
       return
     }
     if (repairMode === 'fast' && rects.length === 0) {
-      message.warning($t('select-watermark-first'))
+      messageApi.warning($t('select-watermark-first'))
       return
     }
     if (repairMode === 'quality' && !hasKonvaStrokes) {
-      message.warning($t('stroke-watermark-first'))
+      messageApi.warning($t('stroke-watermark-first'))
       return
     }
 
@@ -413,7 +412,7 @@ export default function ReWatermark() {
     }
 
     if (!isCVReady()) {
-      message.error($t('opencv-unload'))
+      messageApi.error($t('opencv-unload'))
       return
     }
 
@@ -426,9 +425,9 @@ export default function ReWatermark() {
       })
       setResultImageData(result)
       setViewMode('after')
-      message.success(`${$t('remove-watermark-success')}！`)
+      messageApi.success(`${$t('remove-watermark-success')}！`)
     } catch (err: any) {
-      message.error(`${$t('fail-handle')}: ${err.message}`)
+      messageApi.error(`${$t('fail-handle')}: ${err.message}`)
     } finally {
       setIsProcessing(false)
     }
@@ -437,11 +436,11 @@ export default function ReWatermark() {
   // --- 执行去水印（高质量模式：LaMa AI）---
   const handleRemoveWatermarkQuality = async () => {
     if (!sourceImage || !konvaRef.current) {
-      message.warning($t('stroke-watermark-first'))
+      messageApi.warning($t('stroke-watermark-first'))
       return
     }
     if (!konvaRef.current.hasStrokes()) {
-      message.warning($t('stroke-watermark-first'))
+      messageApi.warning($t('stroke-watermark-first'))
       return
     }
 
@@ -487,19 +486,19 @@ export default function ReWatermark() {
         setPatchRect({ x: patchX, y: patchY, w: patchWidth, h: patchHeight })
         setViewMode('after')
         setProcessingProgress(100)
-        message.success(`${$t('AI-remove-watermark-success')}！`)
+        messageApi.success(`${$t('AI-remove-watermark-success')}！`)
         setIsProcessing(false)
       }
       img.onerror = () => {
         URL.revokeObjectURL(patchUrl)
         setProcessingProgress(undefined)
-        message.error(`${$t('fail-load-patch')}！`)
+        messageApi.error(`${$t('fail-load-patch')}！`)
         setIsProcessing(false)
       }
       img.src = patchUrl
     } catch (err: any) {
       setProcessingProgress(undefined)
-      message.error(`${$t('fail-AI-handle')}: ${err.message}`)
+      messageApi.error(`${$t('fail-AI-handle')}: ${err.message}`)
       setIsProcessing(false)
     }
   }
@@ -523,7 +522,7 @@ export default function ReWatermark() {
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
-        message.success($t('success-download'))
+        messageApi.success($t('success-download'))
       }
       return
     }
@@ -539,9 +538,9 @@ export default function ReWatermark() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      message.success($t('success-download'))
+      messageApi.success($t('success-download'))
     } catch {
-      message.error($t('fail-downlaod'))
+      messageApi.error($t('fail-downlaod'))
     }
   }
 
@@ -636,6 +635,7 @@ export default function ReWatermark() {
           <Spin />
           <p>{`${$t('opencv-loading')}...`}</p>
         </div>
+        {contextHolder}
       </div>
     )
   }
@@ -651,6 +651,7 @@ export default function ReWatermark() {
             {$t('reload')}
           </Button>
         </div>
+        {contextHolder}
       </div>
     )
   }
@@ -822,6 +823,7 @@ export default function ReWatermark() {
         {renderWorkspace()}
         <ProcessingOverlay visible={isProcessing} progress={processingProgress} />
       </div>
+      {contextHolder}
     </div>
   )
 }

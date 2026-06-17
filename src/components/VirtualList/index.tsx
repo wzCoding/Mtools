@@ -28,7 +28,7 @@ const deviationWidth = 64
 const deviationHeight = 202
 const fontSize = 14
 
-export function VirtualList({ list, listConfig, columns, headerConfig }: VirtualListConfig) {
+export function VirtualList({ list, listConfig, columns }: VirtualListConfig) {
 
     const { container, content, itemList, contentStyle, itemRefs, expandedIds, toggleExpand } = useVirtualList(list, listConfig?.itemHeight);
     const { columnWidth, containerHeight } = useListLayout(columns, { deviationWidth, deviationHeight });
