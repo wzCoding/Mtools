@@ -89,14 +89,16 @@
             "result-download": "下载结果",
             "reset": "重置",
             "radius-tip": "修复时从水印周围多大范围内采样填充。值越小越精细，值越大越平滑但可能模糊细节",
-            "repair-radius":"修复半径",
+            "repair-radius": "修复半径",
             "repair-algorithm": "修复算法",
             "stroke-tip": "涂抹水印区域时的画笔粗细，数值越大覆盖范围越宽",
-            "stroke-size":"笔刷大小",
+            "stroke-size": "笔刷大小",
             "selected-area": "已选区域",
-            "bridge-apis-unready":"应用桥通信未就绪，请重启应用后重试",
+            "bridge-apis-unready": "应用桥通信未就绪，请重启应用后重试",
             "show-main-window": "显示主界面",
-            "quit-app": "退出程序"
+            "quit-app": "退出程序",
+            "light": "浅色",
+            "dark": "深色"
         }
     },
     "en": {
@@ -189,14 +191,16 @@
             "result-download": "Download Result",
             "reset": "Reset",
             "radius-tip": "The sampling radius around the watermark for inpainting. Smaller values are more precise, larger values are smoother but may blur details",
-            "repair-radius":"Repair radius",
+            "repair-radius": "Repair radius",
             "repair-algorithm": "Repair Algorithm",
             "stroke-tip": "Brush thickness when painting the watermark area. Larger values cover a wider area",
-            "stroke-size":"Brush size",
+            "stroke-size": "Brush size",
             "selected-area": "Selected Area",
-            "bridge-apis-unready":"Application bridge communication not ready, please restart the application and try again",
+            "bridge-apis-unready": "Application bridge communication not ready, please restart the application and try again",
             "show-main-window": "Show Main Window",
-            "quit-app": "Quit"
+            "quit-app": "Quit",
+            "light": "Light",
+            "dark": "Dark"
         }
     }
 }

@@ -1,4 +1,4 @@
-import { Button, Tooltip, Modal, Select, Switch } from 'antd'
+import { Button, Tooltip, Modal, Select, Segmented } from 'antd'
 import React, { useMemo, useCallback, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { PictureOutlined, AppstoreOutlined, SettingOutlined, TranslationOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons'
@@ -56,9 +56,11 @@ export default function MenuBar() {
         {
             title: 'theme',
             icon: <SunOutlined />,
-            type: 'switch' as const,
-            checked: <SunOutlined />,
-            unchecked: <MoonOutlined />,
+            type: 'Segmented' as const,
+            options: [
+                { value: '', label: $t('light'), icon: <SunOutlined /> },
+                { value: 'dark', label: $t('dark'), icon: <MoonOutlined /> },
+            ],
             key: 'theme',
         },
     ], [handleLangChange, i18n.language])
@@ -77,13 +79,8 @@ export default function MenuBar() {
                     value={i18n.language}
                 />
             )}
-            {item.type === 'switch' && (
-                <Switch
-                    className='setting-option switch'
-                    checkedChildren={item.checked}
-                    unCheckedChildren={item.unchecked}
-                    defaultChecked
-                />
+            {item.type === 'Segmented' && (
+                <Segmented className='setting-option segmented' options={item.options}></Segmented>
             )}
         </div>
     )), [settings, i18n.language])
@@ -121,7 +118,7 @@ export default function MenuBar() {
                     )
                 })
             }
-            <Modal open={showModal} title="Title" footer={null} onCancel={() => setShowModal(false)}>
+            <Modal open={showModal} title={$t('setting')} footer={null} onCancel={() => setShowModal(false)}>
                 {settingsContent}
             </Modal>
         </div>
