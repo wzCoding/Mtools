@@ -20,6 +20,7 @@
     "exceljs": "^4.4.0",
     "iconv-lite": "^0.7.2",
     "konva": "^10.3.0",
+    "motion": "^12.40.0",
     "node-addon-api": "^8.5.0",
     "onnxruntime-node": "^1.26.0",
     "react": "^19.2.0",

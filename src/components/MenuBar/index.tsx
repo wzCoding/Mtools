@@ -3,6 +3,7 @@ import React, { useMemo, useCallback, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { PictureOutlined, AppstoreOutlined, SettingOutlined, TranslationOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useTheme, type Theme } from '@/hooks/useTheme'
 import i18n from '@/i18n'
 import './index.less'
 
@@ -34,12 +35,18 @@ export default function MenuBar() {
     const location = useLocation()
 
     const { t: $t } = useTranslation()
+    const { theme, setTheme } = useTheme()
 
     /** 切换语言 */
     const handleLangChange = useCallback((value: string) => {
         i18n.changeLanguage(value)
         window.bridgeApis?.changeLanguage(value)
     }, [])
+
+    /** 切换主题 */
+    const handleThemeChange = useCallback((value: string | number) => {
+        setTheme((value === 'dark' ? 'dark' : 'light') as Theme)
+    }, [setTheme])
 
     const settings = useMemo(() => [
         {
@@ -58,12 +65,14 @@ export default function MenuBar() {
             icon: <SunOutlined />,
             type: 'Segmented' as const,
             options: [
-                { value: '', label: $t('light'), icon: <SunOutlined /> },
+                { value: 'light', label: $t('light'), icon: <SunOutlined /> },
                 { value: 'dark', label: $t('dark'), icon: <MoonOutlined /> },
             ],
             key: 'theme',
+            onChange: handleThemeChange,
+            value: theme,
         },
-    ], [handleLangChange, i18n.language])
+    ], [handleLangChange, handleThemeChange, theme, i18n.language])
 
     const settingsContent = useMemo(() => settings.map((item) => (
         <div className='menu-setting-item' key={item.key}>
@@ -80,11 +89,18 @@ export default function MenuBar() {
                 />
             )}
             {item.type === 'Segmented' && (
-                <Segmented className='setting-option segmented' options={item.options}></Segmented>
+                <Segmented
+                    className='setting-option segmented'
+                    options={item.options}
+                    value={item.value}
+                    onChange={item.onChange}
+                />
             )}
-        </div>
-    )), [settings, i18n.language])
+        </div>)
+    ), [settings, theme, i18n.language])
+
     const [showModal, setShowModal] = useState<boolean>(false)
+
     const activePath = useMemo(() => {
         const matched = menus.find((m) => m.path && location.pathname.startsWith(m.path))
         return matched?.path ?? ''

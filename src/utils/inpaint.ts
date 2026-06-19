@@ -151,9 +151,6 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
   })
 }
 
-/**
- * 从 Canvas 导出为 Blob（用于下载）
- */
 export function canvasToBlob(canvas: HTMLCanvasElement, type: 'image/png' | 'image/jpeg' = 'image/png', quality = 0.98): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
