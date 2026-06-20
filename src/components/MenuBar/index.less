@@ -7,11 +7,11 @@
     width: 48px;
     height: calc(100% - var(--padding-primary) * 2);
     position: relative;
-    border-right: 1px solid var(--border-light);
-    background-color: var(--bg-primary);
+    border-right: 1px solid var(--border-color);
+    background-color: var(--bg-sidebar);
     padding: var(--padding-primary) 0;
     box-sizing: border-box;
-
+    
     .menu-item {
         width: 32px;
         height: 32px;
@@ -21,16 +21,17 @@
         justify-content: center;
         align-items: center;
         transition: background-color 0.3s ease;
-
+        color:var(--text-sidebar);
         &:hover {
-            background-color: var(--action-hover);
+            background-color: var(--bg-sidebar-hover) !important;
+            color:var(--text-sidebar-hover) !important;
         }
 
         // 激活状态
         &--active,
         &--active:hover {
-            background-color: var(--action-selected, #e6f4ff);
-            color: var(--primary-color, #1677ff);
+            background-color: color-mix(in oklab, var(--color-primary) 15%, transparent) !important;
+            color: var(--text-active-primary) !important;
         }
 
         &:last-child {

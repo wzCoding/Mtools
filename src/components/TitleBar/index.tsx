@@ -24,13 +24,13 @@ export default function TitleBar() {
             </div>
             <div className="title-bar-buttons">
                 <button onClick={handleMinimize} className="title-bar-button minimize" title={$t('minimize')}>
-                    <SvgIcon name="minimize" color='#303133' />
+                    <SvgIcon name="minimize" style={{fontSize:22}} />
                 </button>
                 <button onClick={handleMaximize} className="title-bar-button maximize" title={$t('maximize')}>
-                    <SvgIcon name="maximize" color='#303133' />
+                    <SvgIcon name="maximize" style={{fontSize:20}} />
                 </button>
                 <button onClick={handleClose} className="title-bar-button close" title={$t('close')}>
-                    <SvgIcon name="close" color='#303133' />
+                    <SvgIcon name="close" style={{fontSize:20}} />
                 </button>
             </div>
         </div>

@@ -1,57 +1,68 @@
 /* theme.css */
 
 :root {
+  --color-primary: lab(54.7061% 2.47157 -58.7937);
   /* 背景色体系 */
-  --bg-primary: #ffffff;        /* 页面主背景 */
-  --bg-secondary: #f3f4f6;      /* 卡片、侧边栏背景 */
-  --bg-tertiary: #e5e7eb;       /* 输入框、按钮背景 */
-  --bg-hover:#ecf5ff;  
-  --bg-active:#1677ff;
+  --bg-primary: #ffffff;
+  /* 页面主背景 */
+  --bg-secondary: #f3f4f6;
+  /* 卡片、侧边栏背景 */
+  --bg-tertiary: #e5e7eb;
+  /* 输入框、按钮背景 */
+  --bg-hover: #ecf5ff;
+  --bg-active: #1677ff;
 
   /* 字体颜色体系 */
-  --text-primary: #111827;      /* 主要标题 */
-  --text-secondary: #4b5563;    /* 正文、次要信息 */
-  --text-muted: #cccccc;        /* 占位符、禁用态文字 */
-  --text-active:#2196f3;
-  --text-selected:#ffffff;
+  --text-primary: #111827;
+  /* 主要标题 */
+  --text-secondary: #4b5563;
+  /* 正文、次要信息 */
+  --text-muted: #cccccc;
+  /* 占位符、禁用态文字 */
+  --text-active: #2196f3;
+  --text-selected: #ffffff;
 
   /* 边框颜色体系 */
-  --border-light: #e5e7eb;      /* 分割线 */
-  --border-dark: #2f3033;       /* 深色分割线 */
-  --border-focus: #3b82f6;      /* 选中/聚焦状态 (蓝色) */
+  --border-light: #e5e7eb;
+  /* 分割线 */
+  --border-dark: #2f3033;
+  /* 深色分割线 */
+  --border-focus: #3b82f6;
+  /* 选中/聚焦状态 (蓝色) */
 
   /* 交互反馈 */
   --action-hover: rgba(0, 0, 0, 0.05);
-  --success-color: #67c23a;     /* 成功状态 (绿色) */
-  --danger-color: #f44336;       /* 错误状态 (红色) */
-  --info-color: #2196f3;        /* 信息状态 (蓝色) */
-  --warning-color: #ff9800;     /* 警告状态 (橙色) */
+  --success-color: #67c23a;
+  /* 成功状态 (绿色) */
+  --danger-color: #f44336;
+  /* 错误状态 (红色) */
+  --info-color: #2196f3;
+  /* 信息状态 (蓝色) */
+  --warning-color: #ff9800;
+  /* 警告状态 (橙色) */
 }
 
 [data-theme='dark'] {
-  /* 背景色体系 */
-  --bg-primary: #111827;        /* 深灰近黑 */
-  --bg-secondary: #1f2937;      /* 稍浅的灰色 */
-  --bg-tertiary: #374151;
-  --bg-hover:#ecf5ff;
-  
-  /* 字体颜色体系 */
-  --text-primary: #f9fafb;      /* 近乎纯白 */
-  --text-secondary: #d1d5db;    /* 浅灰 */
-  --text-muted: #6b7280;
 
-  /* 边框颜色体系 */
-  --border-light: #eff2f7;      /* 深色分割线 */
-  --border-dark: #bcbec3;       /* 深色分割线 */
-  --border-focus: #60a5fa;      /* 稍微亮一点的蓝色 */
 
-  /* 交互反馈 */
-  --action-hover: rgba(255, 255, 255, 0.1);
+  --bg-sidebar: #0b0f14;
+  --bg-sidebar-hover:lab(18.7359% -1.15503 -7.2063);
+
+  --bg-page:lab(6.15655% -.647351 -4.75174);
+
+  --text-primary:#ffffff;
+  --text-active-primary: var(--color-primary);
+  --text-muted: lab(60.5313% -.87291 -4.40395);
+  --text-sidebar: lab(65.1715% -.876606 -4.40595);
+  --text-sidebar-hover: lab(94.1891% -.3829 -1.84566);
+
+  --border-color:lab(100% 0 0 / .08);
+
 }
 
 /* 全局应用基础样式 */
 body {
-  background-color: var(--bg-primary);
+  background-color: var(--bg-page);
   color: var(--text-primary);
   // transition: background-color 0.3s ease, color 0.3s ease; /* 添加平滑过渡 */
 }

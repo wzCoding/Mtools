@@ -23,7 +23,7 @@ function AnimatedRoutes() {
           />
         ))}
 
-        {/* 404 兜底 */}
+        {/* 404 */}
         <Route path='*' element={<Navigate to={DEFAULT_PATH} replace />} />
       </Routes>
     </AnimatePresence>
