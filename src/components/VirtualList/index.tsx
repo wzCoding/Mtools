@@ -25,7 +25,7 @@ interface VirtualListConfig {
 const defaultItemHeight = 36
 const defaultColumnWidth = 160
 const deviationWidth = 64
-const deviationHeight = 202
+const deviationHeight = 210
 const fontSize = 14
 
 export function VirtualList({ list, listConfig, columns }: VirtualListConfig) {
@@ -73,8 +73,10 @@ export function VirtualList({ list, listConfig, columns }: VirtualListConfig) {
                         const showDescriptionTooltip = Math.floor(columnWidth / fontSize) < formatData.description!.length
                         const showNameTooltip = Math.floor(columnWidth / fontSize) < formatData.name!.length
                         const hasChildren = !!item.children && item.children.length > 0
+                        const itemClass = isExpanded ? 'list-item item-active' : 'list-item'
+                        const cellClass = isExpanded ? 'cell-expand expanded' : 'cell-expand'
                         return (
-                            <div className='list-item'
+                            <div className={itemClass}
                                 key={`${formatData.id}`}
                                 id={formatData.id}
                                 ref={node => itemRefs(node, formatData.id as string)}
@@ -86,13 +88,13 @@ export function VirtualList({ list, listConfig, columns }: VirtualListConfig) {
                                 {showDescriptionTooltip ? (
                                     <Tooltip title={formatData.description}>
                                         <div className="list-cell" style={getCellStyle('description', formatData.level)} onClick={() => toggleExpand(itemId)}>
-                                            {hasChildren && <RightOutlined className={isExpanded ? 'cell-expand expanded' : 'cell-expand'}></RightOutlined>}
+                                            {hasChildren && <RightOutlined className={cellClass}></RightOutlined>}
                                             <img className="cell-icon" src={formatData.icon} alt={formatData.description} />
                                             <span className="cell-text">{formatData.description}</span>
                                         </div>
                                     </Tooltip>
                                 ) : (<div className="list-cell" style={getCellStyle('description', formatData.level)} onClick={() => toggleExpand(itemId)}>
-                                    {hasChildren && <RightOutlined className={isExpanded ? 'cell-expand expanded' : 'cell-expand'}></RightOutlined>}
+                                    {hasChildren && <RightOutlined className={cellClass}></RightOutlined>}
                                     <img src={formatData.icon} alt={formatData.description} />
                                     <span>{formatData.description}</span>
                                 </div>)}

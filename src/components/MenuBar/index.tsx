@@ -121,16 +121,15 @@ export default function MenuBar() {
                     const isActive = activePath === item.path
 
                     return (
-                        <Button
+                        <div
                             key={item.title}
-                            type='text'
                             className={`menu-item${isActive ? ' menu-item--active' : ''}`}
                             onClick={() => handleMenuClick(item)}
                         >
                             <Tooltip placement='right' title={$t(item.title)}>
                                 {item.icon}
                             </Tooltip>
-                        </Button>
+                        </div>
                     )
                 })
             }

@@ -1,7 +1,14 @@
 /* theme.css */
 
 :root {
-  --color-primary: lab(54.7061% 2.47157 -58.7937);
+  --color-primary: #0088e9;
+  --title-bar-height: 30px;
+  --padding-primary: 16px;
+  --padding-secondary: 8px;
+  --border-radius: 6px;
+  --gap: 4px;
+
+
   /* 背景色体系 */
   --bg-primary: #ffffff;
   /* 页面主背景 */
@@ -40,23 +47,42 @@
   /* 信息状态 (蓝色) */
   --warning-color: #ff9800;
   /* 警告状态 (橙色) */
+
+  /* 滚动条 */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
 }
 
 [data-theme='dark'] {
 
 
   --bg-sidebar: #0b0f14;
-  --bg-sidebar-hover:lab(18.7359% -1.15503 -7.2063);
+  --bg-hover: lab(18.7359% -1.15503 -7.2063);
 
-  --bg-page:lab(6.15655% -.647351 -4.75174);
+  --bg-page: lab(6.15655% -.647351 -4.75174);
 
-  --text-primary:#ffffff;
+  --bg-page-secondary: lab(16.4313% -.972167 -5.78371);
+
+  --bg-card: lab(11.2127% -.879765 -5.40984);
+
+
+
+  --text-primary: #eceff2;
   --text-active-primary: var(--color-primary);
+  --text-muted-secondary: lab(16.4313% -.972167 -5.78371);
   --text-muted: lab(60.5313% -.87291 -4.40395);
   --text-sidebar: lab(65.1715% -.876606 -4.40595);
   --text-sidebar-hover: lab(94.1891% -.3829 -1.84566);
 
-  --border-color:lab(100% 0 0 / .08);
+  --border-color: lab(100% 0 0 / .08);
+
+  /* 滚动条 - 暗色主题 */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+
+
 
 }
 

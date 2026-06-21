@@ -216,8 +216,8 @@ export default function Home() {
                 title: $t('MEM-TOTAL'),
                 content: <div className='content-box'>
                     <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'calc(var(--padding-secondary) * 0.5)' }}>{usedVal}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', paddingRight: 'calc(var(--padding-secondary) * 0.5)' }}>{usedUnit}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>/</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', paddingRight: 'calc(var(--padding-secondary) * 0.5)' }}>{usedUnit}</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/</span>
                     <span style={{ color: 'var(--text-primary)', fontSize: '12px', paddingLeft: 'calc(var(--padding-secondary) * 0.5)' }}>{totalVal} {totalUnit}</span>
                 </div>,
                 style: { width: '100%', height: '64px' }
@@ -234,7 +234,7 @@ export default function Home() {
                 title: $t('UPTIME'),
                 content: <div className='content-box'>
                     <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{formatUptime(uptime)}</span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{uptime > 0 ? `${$t('RUNNING')}` : ''}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{uptime > 0 ? `${$t('RUNNING')}` : ''}</span>
                 </div>,
                 style: { width: '100%', height: '64px' }
             },
@@ -299,13 +299,12 @@ export default function Home() {
         exportToExcel(processesDataRef.current);
     }, [])
 
-    // 稳定 HeaderBar 的 children 引用，配合 React.memo 避免无效渲染
     const headerBarChildren = useMemo(() => (
         <div className='header-bar-right'>
             <Button type="default" color="default" variant="filled" className='refresh-button' icon={<ReloadOutlined />} onClick={handleRefresh}>
                 {$t('refresh')}
             </Button>
-            <Button type="default" color="default" variant="filled" className='thrmr-button' icon={<ExportOutlined />} onClick={handleExport}>{$t('export')}</Button>
+            <Button type="primary" variant="filled" className='export-button' icon={<ExportOutlined />} onClick={handleExport}>{$t('export')}</Button>
         </div>
     ), [handleRefresh, handleExport, i18n.language])
 
@@ -323,10 +322,10 @@ export default function Home() {
                     ))}
                 </div>
 
-                <div style={{ display: !showSearch ? 'block' : 'none', width: '100%' }}>
+                <div className='list-container' style={{ display: !showSearch ? 'block' : 'none', width: '100%' }}>
                     <VirtualList list={processesData} columns={tableColumn} listConfig={listConfig}></VirtualList>
                 </div>
-                <div style={{ display: showSearch ? 'block' : 'none', width: '100%' }}>
+                <div className='list-container' style={{ display: showSearch ? 'block' : 'none', width: '100%' }}>
                     <VirtualList list={searchData} columns={tableColumn} listConfig={listConfig}></VirtualList>
                 </div>
 

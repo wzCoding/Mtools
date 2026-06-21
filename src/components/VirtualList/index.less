@@ -4,12 +4,13 @@
      flex-direction: column;
      justify-content: flex-start;
      align-items: flex-start;
+     background-color: var(--bg-card);
 
      .virtual-list-header {
          display: flex;
          width: 100%;
-         background-color: var(--bg-secondary);
-         border-bottom: 1px solid var(--border-light);
+         background-color: var(--bg-page-secondary);
+         border-bottom: 1px solid var(--border-color);
          box-sizing: border-box;
          height: 36px;
          line-height: 36px;
@@ -27,7 +28,7 @@
          justify-content: center;
          align-items: center;
          width: 100%;
-         color: var(--text-secondary);
+         color: var(--text-primary);
          font-size: 14px;
          user-select: none;
      }
@@ -38,9 +39,25 @@
          overflow-x: hidden;
          position: relative;
 
-         &::-webkit-scrollbar-track {
-             background-color: transparent;
+         // 滚动条宽度
+         &::-webkit-scrollbar {
              width: 8px;
+         }
+
+         // 滚动条轨道
+         &::-webkit-scrollbar-track {
+             background-color: var(--scrollbar-track);
+         }
+
+         // 滚动条滑块
+         &::-webkit-scrollbar-thumb {
+             background-color: var(--scrollbar-thumb);
+             border-radius: 4px;
+             transition: background-color 0.2s ease;
+
+             &:hover {
+                 background-color: var(--scrollbar-thumb-hover);
+             }
          }
 
 
@@ -51,26 +68,46 @@
              flex-direction: column;
              justify-content: center;
              align-items: center;
+             color: var(--text-primary);
              gap: var(--gap);
-             background-color: var(--bg-tertiary);
-             .no-data-icon{
-                font-size: 36px;
-                color: var(--text-secondary);
+             background-color: var(--bg-card);
+
+             .no-data-icon {
+                 font-size: 36px;
              }
-             .no-data-text{
-                color: var(--text-secondary);
-                letter-spacing: 2px;
+
+             .no-data-text {
+                 letter-spacing: 2px;
              }
          }
 
          .list-item {
              box-sizing: border-box;
-             border-bottom: 1px solid #f0f0f0;
+             border-bottom: 1px solid var(--border-color);
              display: flex;
              align-items: center;
+             position: relative;
+             transition: background-color 0.3s linear;
+             &:last-child{
+                border: unset;
+             }
 
              &:hover {
-                 background-color: var(--bg-hover);
+                 background-color: color-mix(in oklab, var(--bg-hover) 50%, transparent);
+             }
+
+             &.item-active{
+                background-color: color-mix(in oklab, var(--color-primary) 10%, transparent);
+                &::before{
+                    content: '';
+                    display: block;
+                    width: 3px;
+                    height: 100%;
+                    background-color: var(--color-primary);
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                }
              }
 
              .list-cell {
@@ -78,8 +115,6 @@
                  flex-shrink: 0;
                  box-sizing: border-box;
                  padding: 0 var(--padding-secondary);
-                 //  background-color: pink;
-                 //  border-right: 1px solid #000;
                  white-space: nowrap;
                  overflow: hidden;
                  text-overflow: ellipsis;
@@ -102,7 +137,7 @@
                          height: 10px;
                          cursor: pointer;
                          transition: transform 0.2s ease;
-                         color: var(--text-secondary);
+                         color: var(--text-primary);
 
                          &.expanded {
                              transform: rotate(90deg);
