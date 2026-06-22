@@ -12,13 +12,13 @@
 
     .home-header {
         width: 100%;
-        height: 42px;
 
-        .header-bar-right{
-            .refresh-button{
-                border:1px solid var(--border-color);
+        .header-bar-right {
+            .refresh-button {
+                border: 1px solid var(--border-color);
                 background-color: var(--bg-card);
-                &:hover{
+
+                &:hover {
                     background-color: var(--bg-hover);
                     border-color: color-mix(in oklab, var(--color-primary) 50%, transparent);
                 }
@@ -44,13 +44,30 @@
             width: 100%;
             padding-bottom: var(--padding-secondary);
             box-sizing: border-box;
-
+            .card-panel{
+                padding:var(--padding-secondary);
+            }
+            .card-content{
+                padding-top: 0;
+            }
             .content-box {
                 line-height: 1;
+
+                .content-box-header {
+                    font-size: 12px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding-bottom: var(--padding-tertiary);
+                }
+
+                .content-box-info {
+                    padding-bottom: var(--padding-tertiary);
+                }
             }
         }
 
-        .list-container{
+        .list-container {
             width: 100%;
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
@@ -69,21 +86,21 @@
 
     .hide-columns,
     .list-item-context {
-        padding: var(--padding-secondary);
+        padding: var(--padding-tertiary);
         box-sizing: border-box;
         display: flex;
-        gap: var(--padding-secondary);
+        gap: var(--padding-tertiary);
         justify-content: flex-start;
         align-items: center;
         border-radius: var(--border-radius);
 
         &:hover {
-            background-color: var(--bg-secondary);
+            background-color: var(--bg-hover);
         }
     }
 
     .list-item-context {
-        padding: calc(var(--padding-secondary) / 2);
+        padding: calc(var(--padding-tertiary) / 2);
         justify-content: center;
 
         p {

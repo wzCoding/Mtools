@@ -25,7 +25,7 @@ interface VirtualListConfig {
 const defaultItemHeight = 36
 const defaultColumnWidth = 160
 const deviationWidth = 64
-const deviationHeight = 210
+const deviationHeight = 256
 const fontSize = 14
 
 export function VirtualList({ list, listConfig, columns }: VirtualListConfig) {

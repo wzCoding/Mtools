@@ -3,7 +3,7 @@ import HeaderBar from '@/components/HeaderBar'
 import CardPanel from '@/components/CardPanel'
 import ContextMenu from '@/components/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
-import { Button, Modal, message } from 'antd'
+import { Button, Modal, Progress, message } from 'antd'
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import columnsData from '@/assets/json/columns.json'
@@ -14,6 +14,7 @@ import type { TableColumn, ProcessInfo } from '@/type/index'
 import { VirtualList } from '@/components/VirtualList'
 import { ProcessingOverlay } from '@/components/ProcessingOverlay'
 import i18n from '@/i18n'
+import SvgIcon from '@/components/SvgIcon'
 
 const defaultColumnsLength = 5
 const columnList = handleTableColumns(columnsData, defaultColumnsLength)
@@ -166,7 +167,7 @@ export default function Home() {
     }), [tableColumn, handleToggleColumn, i18n.language]);
 
     const listItemContext = useMemo(() => (
-        <div className='list-item-context' onClick={killProcessByPid}><StopOutlined color='red'/><p>{$t('kill-process')}</p></div>
+        <div className='list-item-context' onClick={killProcessByPid}><StopOutlined color='red' /><p>{$t('kill-process')}</p></div>
     ), [i18n.language])
     const contextMenuRender = useRef<React.ReactNode>(headerContext)
 
@@ -203,40 +204,60 @@ export default function Home() {
         const [usedVal, usedUnit] = memoryUsedStr.split(' ');
         const [totalVal, totalUnit] = memoryTotalStr.split(' ');
 
+        const cpuPercent = Number(cpuUsage.toFixed(1));
+        const memoryPercent = Number((+usedVal / +totalVal).toFixed(2)) * 100;
+        const processPercent = Number((activeProcessCount / processCount).toFixed(2)) * 100
+
         return [
             {
-                title: $t('CPU-TOTAL'),
+                key: 'CPU-TOTAL',
                 content: <div className='content-box'>
-                    <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{cpuUsage.toFixed(1)}%</span>
-                    <span style={{ color: cpuUsage > 80 ? 'var(--error-color)' : 'var(--success-color)', fontSize: '12px' }}>{cpuUsage > 80 ? $t('HIGH') : $t('STABLE')}</span>
+                    <div className='content-box-header'><span>{$t('CPU-TOTAL')}</span><SvgIcon name='cpu' color='var(--color-primary)' size={16} /></div>
+                    <div className='content-box-info'>
+                        <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{cpuUsage.toFixed(1)}%</span>
+                        <span style={{ color: cpuUsage > 80 ? 'var(--error-color)' : 'var(--color-primary)', fontSize: '12px' }}>{cpuUsage > 80 ? $t('HIGH') : $t('STABLE')}</span>
+                    </div>
+                    <Progress percent={cpuPercent} />
                 </div>,
-                style: { width: '100%', height: '64px' }
+                style: { width: '100%', height: 'auto' }
             },
             {
-                title: $t('MEM-TOTAL'),
+                key: 'MEM-TOTAL',
                 content: <div className='content-box'>
-                    <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'calc(var(--padding-secondary) * 0.5)' }}>{usedVal}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', paddingRight: 'calc(var(--padding-secondary) * 0.5)' }}>{usedUnit}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/</span>
-                    <span style={{ color: 'var(--text-primary)', fontSize: '12px', paddingLeft: 'calc(var(--padding-secondary) * 0.5)' }}>{totalVal} {totalUnit}</span>
+                    <div className='content-box-header'><span>{$t('MEM-TOTAL')}</span><SvgIcon name='memory' color='#ab8be3' size={16} /></div>
+                    <div className='content-box-info'>
+                        <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'calc(var(--padding-secondary) * 0.5)' }}>{usedVal}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', paddingRight: 'calc(var(--padding-secondary) * 0.5)' }}>{usedUnit}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/</span>
+                        <span style={{ color: 'var(--text-primary)', fontSize: '12px', paddingLeft: 'calc(var(--padding-secondary) * 0.5)' }}>{totalVal} {totalUnit}</span>
+                    </div>
+                    <Progress strokeColor='#ab8be3' percent={memoryPercent} />
                 </div>,
-                style: { width: '100%', height: '64px' }
+                style: { width: '100%', height: 'auto' }
             },
             {
-                title: $t('PROCESSES'),
+                key: 'PROCESSES',
                 content: <div className='content-box'>
-                    <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{processCount}</span>
-                    <span style={{ color: 'var(--success-color)', fontSize: '12px' }}>{activeProcessCount} {$t('ACTIVE')}</span>
+                    <div className='content-box-header'><span>{$t('PROCESSES')}</span><SvgIcon name='process' color='#12c281' size={16} /></div>
+                    <div className='content-box-info'>
+                        <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{processCount}</span>
+                        <span style={{ color: '#12c281', fontSize: '12px' }}>{activeProcessCount} {$t('ACTIVE')}</span>
+                    </div>
+                    <Progress strokeColor='#12c281' percent={processPercent} />
                 </div>,
-                style: { width: '100%', height: '64px' }
+                style: { width: '100%', height: 'auto' }
             },
             {
-                title: $t('UPTIME'),
+                key: 'UPTIME',
                 content: <div className='content-box'>
-                    <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{formatUptime(uptime)}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{uptime > 0 ? `${$t('RUNNING')}` : ''}</span>
+                    <div className='content-box-header'><span>{$t('UPTIME')}</span><SvgIcon name='time' color='#e3ae28' size={16} /></div>
+                    <div className='content-box-info'>
+                        <span style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: '600', paddingRight: 'var(--padding-secondary)' }}>{formatUptime(uptime)}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{uptime > 0 ? `${$t('RUNNING')}` : ''}</span>
+                    </div>
+                    <Progress strokeColor='#e3ae28' percent={100} />
                 </div>,
-                style: { width: '100%', height: '64px' }
+                style: { width: '100%', height: 'auto' }
             },
         ];
     }, [cardData]);
@@ -317,8 +338,8 @@ export default function Home() {
             </HeaderBar>
             <div className="home-content">
                 <div className="card-list">
-                    {cardList.map((card, index) => (
-                        <CardPanel key={index} title={card.title} content={card.content} style={card.style}></CardPanel>
+                    {cardList.map((card) => (
+                        <CardPanel key={card.key} content={card.content} style={card.style}></CardPanel>
                     ))}
                 </div>
 
@@ -338,6 +359,8 @@ export default function Home() {
                     confirmLoading={modalConfig.loading}
                     onOk={handleOk}
                     onCancel={handleCancel}
+                    okText={$t('ok')}
+                    cancelText={$t('cancel')}
                 >
                     <p>{modalConfig.content}</p>
                 </Modal>

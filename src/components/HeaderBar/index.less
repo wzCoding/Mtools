@@ -7,15 +7,20 @@
     padding-bottom: var(--padding-secondary);
     border-bottom: 1px solid var(--border-color);
     box-sizing: border-box;
-    background-color: var(--bg-sidebar);
+    background-color: var(--bg-page);
     color: var(--text-muted);
 
     .header-search-input {
         flex: 1;
 
+        :where(.ant-input-affix-wrapper).ant-input-outlined:focus, :where(.ant-input-affix-wrapper).ant-input-outlined:focus-within{
+            border-color: var(--color-primary);
+        }
+
         span.ant-input-affix-wrapper {
             background-color: var(--bg-card);
             color: var(--text-muted);
+            border-color:var(--border-color);
 
             input.ant-input::placeholder {
                 color: var(--text-muted);

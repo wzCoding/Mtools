@@ -65,14 +65,13 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   const themeConfig = useMemo(() => ({
     algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     token: {
-      colorPrimary: '#0088e9'
+      colorPrimary: '#0088e9',
     },
-    // components: {
-    //   Input: {
-    //     activeBg: 'var(--bg-card)',
-    //     algorithm: true, 
-    //   },
-    //}
+    components: {
+      Modal:{
+        contentBg:'var(--bg-card)',
+      }
+    }
   }), [theme])
 
   return (

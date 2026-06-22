@@ -223,7 +223,7 @@ const handleTableColumns = (columns: dataObj, showLength: number): TableColumn[]
             ellipsis: { showTitle: false },
         }
         if (['description', 'name'].includes(key)) {
-            column.align = key === 'description' ? 'left' : 'center';
+            column.align = 'left';
             column.render = (value: string, record: ProcessInfo) => {
                 return createIconColumn(key, value, record);
             }
