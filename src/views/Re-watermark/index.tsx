@@ -58,6 +58,7 @@ export default function ReWatermark() {
   const [patchImage, setPatchImage] = useState<HTMLImageElement | null>(null)
   const [patchRect, setPatchRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const [processingProgress, setProcessingProgress] = useState<number | undefined>(undefined)
+  const [modalConfig, setModalConfig] = useState({ open: false, mode: repairMode })
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const resultCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -558,7 +559,6 @@ export default function ReWatermark() {
     setHasKonvaStrokes(false)
   }
 
-  // --- 工作区渲染（避免 JSX 嵌套三元）---
   const renderWorkspace = () => {
     if (!sourceImage) {
       return (
@@ -570,7 +570,7 @@ export default function ReWatermark() {
             onChange={handleFileChange}
           >
             <div className="rw-drop-zone">
-              <UploadOutlined style={{ fontSize: 48, color: '#bbb' }} />
+              <UploadOutlined style={{ fontSize: 48 }} />
               <p>{$t('click-or-drag-image')}</p>
               <p className="rw-drop-sub">{$t('image-tip')}</p>
             </div>
@@ -677,17 +677,7 @@ export default function ReWatermark() {
                 setRepairMode(newMode)
                 return
               }
-
-              Modal.confirm({
-                title: $t('switch-mode'),
-                content: `${$t('switch-to')}「${newMode === 'fast' ? $t('fast') : $t('quality')}」${$t('switch-tip')}？`,
-                okText: $t('ok'),
-                cancelText: $t('cancel'),
-                onOk: () => {
-                  setRepairMode(newMode)
-                  handleReset()
-                },
-              })
+              setModalConfig({ open: true, mode: newMode })
             }}
             disabled={isProcessing}
           />
@@ -755,68 +745,86 @@ export default function ReWatermark() {
             </Button>
           )}
         </Space>
+        <Modal
+          title={$t('switch-mode')}
+          open={modalConfig.open}
+          onOk={() => {
+            setModalConfig(prev => ({ ...prev, open: false }))
+            setRepairMode(modalConfig.mode)
+            handleReset()
+          }}
+          onCancel={() => setModalConfig(prev => ({ ...prev, open: false }))}
+          okText={$t('ok')}
+          cancelText={$t('cancel')}
+        >
+          <p>{$t('switch-to')}「{repairMode === 'fast' ? $t('fast') : $t('quality')}」{$t('switch-tip')}？</p>
+        </Modal>
       </div>
 
       {/* 参数设置 */}
-      {sourceImage && (
-        <div className="rw-settings">
-          <Space size="large" wrap>
-            {repairMode === 'fast' ? (
-              <>
+      {
+        sourceImage && (
+          <div className="rw-settings">
+            <Space size="large" wrap>
+              {repairMode === 'fast' ? (
+                <>
+                  <div className="rw-setting-item">
+                    <Tooltip title={$t('radius-tip')} placement='right'>
+                      <span className="rw-setting-label">{$t('repair-radius')}: {inpaintRadius}px</span>
+                    </Tooltip>
+                    <Slider
+                      min={1}
+                      max={15}
+                      value={inpaintRadius}
+                      onChange={setInpaintRadius}
+                      disabled={isProcessing || !!resultImageData}
+                      style={{ width: 150 }}
+                    />
+                  </div>
+                  <div className="rw-setting-item">
+                    <span className="rw-setting-label">{$t('repair-algorithm')}:</span>
+                    <Radio.Group
+                      options={ALGORITHM_OPTIONS}
+                      value={algorithm}
+                      onChange={(e) => setAlgorithm(e.target.value)}
+                      disabled={isProcessing || !!resultImageData}
+                    />
+                  </div>
+                </>
+              ) : (
                 <div className="rw-setting-item">
-                  <Tooltip title={$t('radius-tip')} placement='right'>
-                    <span className="rw-setting-label">{$t('repair-radius')}: {inpaintRadius}px</span>
+                  <Tooltip title={$t('stroke-tip')} placement='right'>
+                    <span className="rw-setting-label">{$t('stroke-size')}: {brushSize}px</span>
                   </Tooltip>
                   <Slider
-                    min={1}
-                    max={15}
-                    value={inpaintRadius}
-                    onChange={setInpaintRadius}
-                    disabled={isProcessing || !!resultImageData}
+                    min={5}
+                    max={60}
+                    value={brushSize}
+                    onChange={setBrushSize}
+                    disabled={isProcessing || !!(resultImageData || patchImage)}
                     style={{ width: 150 }}
                   />
                 </div>
-                <div className="rw-setting-item">
-                  <span className="rw-setting-label">{$t('repair-algorithm')}:</span>
-                  <Radio.Group
-                    options={ALGORITHM_OPTIONS}
-                    value={algorithm}
-                    onChange={(e) => setAlgorithm(e.target.value)}
-                    disabled={isProcessing || !!resultImageData}
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="rw-setting-item">
-                <Tooltip title={$t('stroke-tip')} placement='right'>
-                  <span className="rw-setting-label">{$t('stroke-size')}: {brushSize}px</span>
-                </Tooltip>
-                <Slider
-                  min={5}
-                  max={60}
-                  value={brushSize}
-                  onChange={setBrushSize}
-                  disabled={isProcessing || !!(resultImageData || patchImage)}
-                  style={{ width: 150 }}
-                />
-              </div>
-            )}
-          </Space>
-        </div>
-      )}
+              )}
+            </Space>
+          </div>
+        )
+      }
 
       {/* 选区列表（仅快速模式 + 修复完成前） */}
-      {repairMode === 'fast' && rects.length > 0 && !resultImageData && (
-        <div className="rw-rect-list">
-          <span className="rw-rect-label">{$t('selected-area')} ({rects.length}):</span>
-          {rects.map((r) => (
-            <span key={r.id} className="rw-rect-tag">
-              [{r.x}, {r.y}, {r.width}×{r.height}]
-              <DeleteOutlined className="rw-rect-delete" onClick={() => removeRect(r.id)} />
-            </span>
-          ))}
-        </div>
-      )}
+      {
+        repairMode === 'fast' && rects.length > 0 && !resultImageData && (
+          <div className="rw-rect-list">
+            <span className="rw-rect-label">{$t('selected-area')} ({rects.length}):</span>
+            {rects.map((r) => (
+              <span key={r.id} className="rw-rect-tag">
+                [{r.x}, {r.y}, {r.width}×{r.height}]
+                <DeleteOutlined className="rw-rect-delete" onClick={() => removeRect(r.id)} />
+              </span>
+            ))}
+          </div>
+        )
+      }
 
       {/* 图片编辑区 */}
       <div className="rw-workspace" ref={containerRef} style={{ position: 'relative' }}>
@@ -824,6 +832,6 @@ export default function ReWatermark() {
         <ProcessingOverlay visible={isProcessing} progress={processingProgress} />
       </div>
       {contextHolder}
-    </div>
+    </div >
   )
 }
