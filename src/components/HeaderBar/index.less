@@ -13,21 +13,23 @@
     .header-search-input {
         flex: 1;
 
-        :where(.ant-input-affix-wrapper).ant-input-outlined:focus, :where(.ant-input-affix-wrapper).ant-input-outlined:focus-within{
+        :where(.ant-input-affix-wrapper).ant-input-outlined:focus,
+        :where(.ant-input-affix-wrapper).ant-input-outlined:focus-within {
             border-color: var(--color-primary);
         }
 
         span.ant-input-affix-wrapper {
             background-color: var(--bg-card);
             color: var(--text-muted);
-            border-color:var(--border-color);
+            border-color: var(--border-color);
 
             input.ant-input::placeholder {
                 color: var(--text-muted);
             }
 
+            input.ant-input:focus,
             input.ant-input:focus::placeholder {
-                color: var(--text-primary); 
+                color: var(--text-primary);
             }
         }
 

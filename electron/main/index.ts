@@ -33,6 +33,7 @@ function createWindow() {
         height: 600,
         frame: false,
         titleBarStyle: 'hidden',
+        icon: path.join(__dirname, '../../public/tools.png'),
         webPreferences: {
             preload: path.join(__dirname, '../preload/index.js'),
             nodeIntegration: false,
@@ -63,7 +64,7 @@ function createWindow() {
 }
 
 function createTray() {
-    tray = new Tray(path.join(__dirname, '../../public/electron.png'))
+    tray = new Tray(path.join(__dirname, '../../public/tools.png'))
     tray.setToolTip('Mtools')
     tray.setContextMenu(buildTrayMenu())
 }

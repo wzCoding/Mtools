@@ -32,6 +32,10 @@
     background: var(--bg-page);
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
+
+    .ant-segmented {
+      background-color: var(--bg-sidebar);
+    }
   }
 
   // 参数设置
@@ -57,7 +61,7 @@
   // 选区信息
   .rw-rect-list {
     padding: 8px 16px;
-    background: var(--bg-sidebar);
+    background: var(--bg-page);
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
     display: flex;
@@ -105,24 +109,7 @@
     align-items: center;
     justify-content: center;
     padding: var(--padding-primary);
-
-    &::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background-color: var(--scrollbar-track);
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background-color: var(--scrollbar-thumb);
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-
-      &:hover {
-        background-color: var(--scrollbar-thumb-hover);
-      }
-    }
+    background-color: var(--bg-card);
   }
 
   // 上传提示区
@@ -181,10 +168,10 @@
 
     // 棋盘格背景（用于透明 PNG）
     background-image:
-      linear-gradient(45deg, #6b6969 25%, transparent 25%),
-      linear-gradient(-45deg, #6b6969 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #6b6969 75%),
-      linear-gradient(-45deg, transparent, #6b6969 75%);
+      linear-gradient(45deg, var(--canvas-gradient) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--canvas-gradient) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--canvas-gradient) 75%),
+      linear-gradient(-45deg, transparent, var(--canvas-gradient) 75%);
     background-size: 20px 20px;
     background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
   }
