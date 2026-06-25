@@ -1,12 +1,12 @@
-import SvgIcon from '@/components/SvgIcon'
+import { SvgIcon } from '@/components/SvgIcon'
 import './index.less'
 import { useTranslation } from 'react-i18next'
 
-const logo = '/tools.png'
+const logo = './tools.png'
 
 export default function TitleBar() {
     const { t: $t } = useTranslation();
-    
+
     const handleMinimize = () => {
         window.bridgeApis.minimize();
     }
@@ -24,13 +24,13 @@ export default function TitleBar() {
             </div>
             <div className="title-bar-buttons">
                 <button onClick={handleMinimize} className="title-bar-button minimize" title={$t('minimize')}>
-                    <SvgIcon name="minimize" style={{fontSize:22}} />
+                    <SvgIcon name="minimize" style={{ fontSize: 22 }} />
                 </button>
                 <button onClick={handleMaximize} className="title-bar-button maximize" title={$t('maximize')}>
-                    <SvgIcon name="maximize" style={{fontSize:20}} />
+                    <SvgIcon name="maximize" style={{ fontSize: 20 }} />
                 </button>
                 <button onClick={handleClose} className="title-bar-button close" title={$t('close')}>
-                    <SvgIcon name="close" style={{fontSize:20}} />
+                    <SvgIcon name="close" style={{ fontSize: 20 }} />
                 </button>
             </div>
         </div>

@@ -8,6 +8,7 @@ import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
 
 // 打包前清理旧文件
 fs.rmSync('dist-electron', { recursive: true, force: true })
+fs.rmSync('dist', { recursive: true, force: true })
 
 // https://vite.dev/config/
 export default defineConfig({

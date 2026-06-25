@@ -13,6 +13,7 @@ lerna-debug.log*
 native/**/build/
 dist-electron
 node_modules
+release
 dist
 dist-ssr
 models/*.onnx

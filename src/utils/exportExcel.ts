@@ -1,6 +1,5 @@
 import ExcelJS from 'exceljs';
 import type { ProcessInfo } from '@/type/index';
-import i18n from '@/i18n';
 
 /** 递归展开树形结构，所有层级全部平铺（默认全部展开） */
 const flattenAll = (list: ProcessInfo[], level: number = 0): ProcessInfo[] => {

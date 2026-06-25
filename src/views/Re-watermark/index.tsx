@@ -97,7 +97,7 @@ export default function ReWatermark() {
       })
       .catch((err) => {
         setCvLoading(false)
-        setCvError(`OpenCV 加载失败: ${err.message}`)
+        setCvError(`${$t('fail-load-opencv')}: ${err.message}`)
         console.error(err)
       })
   }, [])

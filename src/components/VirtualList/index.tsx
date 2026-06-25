@@ -5,6 +5,7 @@ import { Tooltip } from "antd";
 import { RightOutlined, FrownOutlined } from "@ant-design/icons";
 import type { ProcessInfo, TableColumn } from '@/type/index'
 import { useTranslation } from 'react-i18next'
+import { SvgIcon } from "../SvgIcon";
 import React from "react";
 import "./index.less"
 
@@ -75,6 +76,7 @@ export function VirtualList({ list, listConfig, columns }: VirtualListConfig) {
                         const hasChildren = !!item.children && item.children.length > 0
                         const itemClass = isExpanded ? 'list-item item-active' : 'list-item'
                         const cellClass = isExpanded ? 'cell-expand expanded' : 'cell-expand'
+                        const icon = formatData.icon ? <img className="cell-icon" src={formatData.icon} alt={formatData.description} /> : <SvgIcon className="cell-icon" name="process" size={16} color="#12c281" />
                         return (
                             <div className={itemClass}
                                 key={`${formatData.id}`}
@@ -89,13 +91,13 @@ export function VirtualList({ list, listConfig, columns }: VirtualListConfig) {
                                     <Tooltip title={formatData.description}>
                                         <div className="list-cell" style={getCellStyle('description', formatData.level)} onClick={() => toggleExpand(itemId)}>
                                             {hasChildren && <RightOutlined className={cellClass}></RightOutlined>}
-                                            <img className="cell-icon" src={formatData.icon} alt={formatData.description} />
+                                            {icon}
                                             <span className="cell-text">{formatData.description}</span>
                                         </div>
                                     </Tooltip>
                                 ) : (<div className="list-cell" style={getCellStyle('description', formatData.level)} onClick={() => toggleExpand(itemId)}>
                                     {hasChildren && <RightOutlined className={cellClass}></RightOutlined>}
-                                    <img src={formatData.icon} alt={formatData.description} />
+                                    {icon}
                                     <span>{formatData.description}</span>
                                 </div>)}
                                 <span className="list-cell" style={getCellStyle('type')}>{formatData.typeAlias}</span>

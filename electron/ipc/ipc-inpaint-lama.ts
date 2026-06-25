@@ -56,7 +56,7 @@ function getOrCreateWorker(): Worker {
   return worker
 }
 
-export function registerInpaintLaMaHandler(win: BrowserWindow) {
+export function registerInpaintLaMaHandler(_: BrowserWindow) {
   ipcMain.handle("inpaint:lama", async (_event, payload: { imageBuffer: ArrayBuffer; maskBuffer: ArrayBuffer; options?: { upscale?: boolean } }) => {
     try {
       console.log("[LaMa] ===== Request received =====")

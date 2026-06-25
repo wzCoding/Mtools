@@ -10,7 +10,7 @@ export interface SvgIconProps {
     style?: React.CSSProperties;
 }
 
-const SvgIcon = ({ name, size = 18, color = 'currentColor', className, prefix = 'icon', style = {} }: SvgIconProps) => {
+export const SvgIcon = ({ name, size = 18, color = 'currentColor', className, prefix = 'icon', style = {} }: SvgIconProps) => {
     const svgClassName = className ? `svg-icon ${className}` : 'svg-icon';
     const symbolId = useMemo(() => `#${prefix}-${name}`, [prefix, name]);
     const svgStyle = {

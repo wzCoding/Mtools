@@ -1,0 +1,145 @@
+{
+  // ============================================================
+  // electron-builder.json5 — MTools 桌面应用打包配置
+  // 文档: https://www.electron.build/configuration/configuration
+  // ============================================================
+
+  // 应用基本信息
+  appId: "com.mtools.app",
+  productName: "MTools",
+  copyright: "Copyright © 2026",
+
+  // 目录配置
+  directories: {
+    output: "release",           // 安装包输出目录
+    buildResources: "public",    // 图标等构建资源所在目录
+  },
+  files: [
+    // 构建产物
+    "dist",                       // Vite 前端构建产物（renderer）
+    "dist-electron",              // Electron 主进程 + preload 构建产物
+    "native",
+  ],
+  extraResources: [
+    {
+      from: "models",
+      to: "models",
+      filter: [
+        "*.onnx",
+      ],
+    },
+    {
+      from: "public/tools.png",
+      to: "tools.png",
+    },
+    // 如果 .node 文件在 asar 中加载有问题，可改用 extraResources 方式:
+    // { from: "native", to: "native", filter: ["**/build/Release/*.node"] },
+  ],
+  // ==================== asar 解包（必须放在文件系统上的原生模块） ====================
+  asarUnpack: [
+    "node_modules/sharp/**",
+    "node_modules/onnxruntime-node/**",
+    "node_modules/onnxruntime-common/**",
+  ],
+
+  // ⚠️ 注意：如果 native/ 目录中的 .node 加载失败，
+  // 可将上面的 "native" 从 files 移到 asarUnpack 或 extraResources
+
+  // ==================== 原生模块 rebuild ====================
+  // 设为 false，因为你使用自定义的 rebuild:native 脚本
+  // 打包前手动执行: npm run build && npm run rebuild:native
+  npmRebuild: false,
+
+  // ==================== 文件关联（可选） ====================
+  // fileAssociations: [
+  //   { ext: "mtools", name: "MTools Project", role: "Editor" },
+  // ],
+
+  // ==================== Windows 平台 ====================
+  win: {
+    target: [
+      {
+        target: "nsis",
+        arch: [
+          "x64",
+          // "arm64",   // 如需支持 ARM Windows，取消注释
+        ],
+      },
+    ],
+    icon: "public/app.png",
+    // 签名配置（如需代码签名）:
+    // certificateFile: "path/to/cert.pfx",
+    // certificatePassword: "your-password",
+  },
+
+  // NSIS 安装器配置
+  nsis: {
+    oneClick: false,                              // 非一键安装（显示安装向导）
+    perMachine: false,                            // 按用户安装（非全局）
+    allowToChangeInstallationDirectory: true,     // 允许用户选择安装目录
+    deleteAppDataOnUninstall: false,              // 卸载时保留用户数据
+    createDesktopShortcut: true,                  // 创建桌面快捷方式
+    createStartMenuShortcut: true,                // 创建开始菜单快捷方式
+    shortcutName: "MTools",                       // 快捷方式名称
+    installerIcon: "public/app.png",
+    uninstallerIcon: "public/app.png",
+    // 安装程序语言（中文）:
+    // installerLanguages: ["zh_CN", "en_US"],
+  },
+
+  // ==================== macOS 平台 ====================
+  mac: {
+    target: [
+      {
+        target: "dmg",
+        arch: [
+          "x64",
+          "arm64",   // Apple Silicon 支持
+        ],
+      },
+    ],
+    icon: "public/app.png",
+    category: "public.app-category.utilities",
+    hardenedRuntime: true,         // 启用 Hardened Runtime（公证需要）
+    gatekeeperAssess: false,       // 自行公证
+    // 如需公证:
+    // notarize: {
+    //   teamId: "YOUR_TEAM_ID",
+    // },
+  },
+
+  dmg: {
+    title: "MTools Installer",
+    // 窗口大小和位置:
+    // window: { width: 500, height: 400 },
+  },
+
+  // ==================== Linux 平台 ====================
+  linux: {
+    target: [
+      {
+        target: "AppImage",
+        arch: [
+          "x64",
+        ],
+      },
+      // 也可添加:
+      // { target: "deb", arch: ["x64"] },
+      // { target: "rpm", arch: ["x64"] },
+    ],
+    icon: "public/app.png",
+    category: "Utility",
+    // 注意: Linux 下可能需要 --no-sandbox
+    // executor: "sh -c",
+  },
+
+  // ==================== 压缩选项 ====================
+  compression: "normal",   // "store" | "normal" | "maximum"
+
+  // ==================== 发布配置（可选） ====================
+  // publish: {
+  //   provider: "github",
+  //   owner: "your-github-username",
+  //   repo: "mtools-releases",
+  // },
+}

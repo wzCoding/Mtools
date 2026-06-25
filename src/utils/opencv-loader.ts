@@ -6,30 +6,31 @@
 
 let cvReady = false
 let cvLoading: Promise<void> | null = null
-
+const openCvPath = './opencv/opencv.js'
 /**
  * 动态加载 opencv.js 脚本
  */
 function loadScript(url: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    // 避免重复加载
     const existing = document.querySelector(`script[src="${url}"]`)
     if (existing) {
-      resolve()
-      return
+      if ((window as any).cv?.Mat && typeof (window as any).cv?.imread === 'function') {
+        resolve()
+        return
+      }
+      existing.remove()
     }
 
     const script = document.createElement('script')
     script.src = url
     script.async = true
-
     script.onload = () => {
-      waitForCVReady()
-        .then(() => resolve())
-        .catch(reject)
+      waitForCVReady().then(resolve).catch(reject)
     }
-    script.onerror = () => reject(new Error(`${$t('fail-load-opencv')}: ${url}`))
-
+    script.onerror = () => {
+      script.remove() 
+      reject(new Error(`Failed to load script: ${url}`))
+    }
     document.head.appendChild(script)
   })
 }
@@ -93,7 +94,7 @@ export function loadOpenCV(): Promise<void> {
     }
 
     // 从 public 目录加载 opencv.js
-    loadScript('/opencv/opencv.js')
+    loadScript(openCvPath)
       .then(() => {
         cvReady = true
         console.log('[OpenCV] 加载并初始化成功')

@@ -7,6 +7,7 @@ import { Button, Modal, Progress, message } from 'antd'
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import columnsData from '@/assets/json/columns.json'
+import killMessage from '@/assets/json/killPorcess.json'
 import { handleProcessesGroup, handleTableColumns, getDataFingerprint, getSystemCpuUsage, formatUptime, formatMemory } from '@/utils'
 import { exportToExcel } from '@/utils/exportExcel'
 import { CheckOutlined, StopOutlined, ReloadOutlined, ExportOutlined } from "@ant-design/icons"
@@ -14,16 +15,10 @@ import type { TableColumn, ProcessInfo } from '@/type/index'
 import { VirtualList } from '@/components/VirtualList'
 import { ProcessingOverlay } from '@/components/ProcessingOverlay'
 import i18n from '@/i18n'
-import SvgIcon from '@/components/SvgIcon'
+import { SvgIcon } from '@/components/SvgIcon'
 
 const defaultColumnsLength = 5
 const columnList = handleTableColumns(columnsData, defaultColumnsLength)
-
-const killMessage = {
-    0: 'fail-kill-process',
-    1: 'has-kill-process',
-    2: 'no-permission',
-}
 
 let groupedData: ProcessInfo[] = [];
 

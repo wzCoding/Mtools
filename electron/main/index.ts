@@ -4,10 +4,19 @@ import path from 'path'
 import handleIpcEvents from '../ipc/index.js'
 import i18n from '../utils/i18n.js'
 
-const isDev = process.env.NODE_ENV === 'development'
+const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
+
+function resolveAssetPath(relativePath: string): string {
+    if (isDev) {
+        // 开发环境：相对于项目根目录的 public/
+        return path.join(__dirname, '../../public', relativePath)
+    }
+    // 生产环境：extraResources 中的文件在 resources/ 目录下
+    return path.join(process.resourcesPath, relativePath)
+}
 
 let tray: Tray | null = null
 
@@ -33,7 +42,7 @@ function createWindow() {
         height: 600,
         frame: false,
         titleBarStyle: 'hidden',
-        icon: path.join(__dirname, '../../public/tools.png'),
+        icon: resolveAssetPath('tools.png'),
         webPreferences: {
             preload: path.join(__dirname, '../preload/index.js'),
             nodeIntegration: false,
@@ -50,6 +59,9 @@ function createWindow() {
     if (isDev) {
         win.webContents.openDevTools()
     }
+    if(!isDev){
+        win.webContents.openDevTools()
+    }
     createTray()
     handleIpcEvents(win)
 
@@ -64,7 +76,7 @@ function createWindow() {
 }
 
 function createTray() {
-    tray = new Tray(path.join(__dirname, '../../public/tools.png'))
+    tray = new Tray(resolveAssetPath('tools.png'))
     tray.setToolTip('Mtools')
     tray.setContextMenu(buildTrayMenu())
 }
