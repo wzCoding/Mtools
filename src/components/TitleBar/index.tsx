@@ -2,7 +2,7 @@ import { SvgIcon } from '@/components/SvgIcon'
 import './index.less'
 import { useTranslation } from 'react-i18next'
 
-const logo = './tools.png'
+const logo = './tools.ico'
 
 export default function TitleBar() {
     const { t: $t } = useTranslation();

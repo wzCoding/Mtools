@@ -8,10 +8,9 @@
   appId: "com.mtools.app",
   productName: "MTools",
   copyright: "Copyright © 2026",
-
+  
   // 目录配置
   directories: {
-    output: "release",           // 安装包输出目录
     buildResources: "public",    // 图标等构建资源所在目录
   },
   files: [
@@ -29,8 +28,8 @@
       ],
     },
     {
-      from: "public/tools.png",
-      to: "tools.png",
+      from: "public/tools.ico",
+      to: "tools.ico",
     },
     // 如果 .node 文件在 asar 中加载有问题，可改用 extraResources 方式:
     // { from: "native", to: "native", filter: ["**/build/Release/*.node"] },
@@ -66,7 +65,7 @@
         ],
       },
     ],
-    icon: "public/app.png",
+    icon: "tools.ico",
     // 签名配置（如需代码签名）:
     // certificateFile: "path/to/cert.pfx",
     // certificatePassword: "your-password",
@@ -81,8 +80,8 @@
     createDesktopShortcut: true,                  // 创建桌面快捷方式
     createStartMenuShortcut: true,                // 创建开始菜单快捷方式
     shortcutName: "MTools",                       // 快捷方式名称
-    installerIcon: "public/app.png",
-    uninstallerIcon: "public/app.png",
+    installerIcon: "tools.ico",
+    uninstallerIcon: "tools.ico",
     // 安装程序语言（中文）:
     // installerLanguages: ["zh_CN", "en_US"],
   },
@@ -98,7 +97,7 @@
         ],
       },
     ],
-    icon: "public/app.png",
+    icon: "tools.ico",
     category: "public.app-category.utilities",
     hardenedRuntime: true,         // 启用 Hardened Runtime（公证需要）
     gatekeeperAssess: false,       // 自行公证
@@ -127,10 +126,13 @@
       // { target: "deb", arch: ["x64"] },
       // { target: "rpm", arch: ["x64"] },
     ],
-    icon: "public/app.png",
+    icon: "tools.ico",
     category: "Utility",
     // 注意: Linux 下可能需要 --no-sandbox
     // executor: "sh -c",
+  },
+  electronDownload: {
+    mirror: "https://npmmirror.com/mirrors/electron/",
   },
 
   // ==================== 压缩选项 ====================

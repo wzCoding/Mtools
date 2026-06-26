@@ -8,6 +8,7 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
+const debug = false
 
 function resolveAssetPath(relativePath: string): string {
     if (isDev) {
@@ -42,7 +43,7 @@ function createWindow() {
         height: 600,
         frame: false,
         titleBarStyle: 'hidden',
-        icon: resolveAssetPath('tools.png'),
+        icon: resolveAssetPath('tools.ico'),
         webPreferences: {
             preload: path.join(__dirname, '../preload/index.js'),
             nodeIntegration: false,
@@ -56,12 +57,10 @@ function createWindow() {
         win.loadFile(path.join(__dirname, '../../dist/index.html'))
     }
 
-    if (isDev) {
+    if (isDev && debug) {
         win.webContents.openDevTools()
     }
-    if(!isDev){
-        win.webContents.openDevTools()
-    }
+
     createTray()
     handleIpcEvents(win)
 
@@ -76,7 +75,7 @@ function createWindow() {
 }
 
 function createTray() {
-    tray = new Tray(resolveAssetPath('tools.png'))
+    tray = new Tray(resolveAssetPath('tools.ico'))
     tray.setToolTip('Mtools')
     tray.setContextMenu(buildTrayMenu())
 }
