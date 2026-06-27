@@ -22,6 +22,23 @@ contextBridge.exposeInMainWorld("bridgeApis", {
             maskBuffer,
         }),
 
+    // ─── 截图 ───
+    captureScreen: () => ipcRenderer.invoke("screenshot:capture"),
+    copyScreenshotToClipboard: (dataUrl: string) =>
+        ipcRenderer.invoke("screenshot:copy-to-clipboard", dataUrl),
+    saveScreenshotToFile: (dataUrl: string) =>
+        ipcRenderer.invoke("screenshot:save-to-file", dataUrl),
+
+    // ─── 截图快捷键 ───
+    getScreenshotShortcut: () => ipcRenderer.invoke("screenshot:get-shortcut"),
+    setScreenshotShortcut: (accelerator: string) =>
+        ipcRenderer.invoke("screenshot:set-shortcut", accelerator),
+    getShortcutScreenshotResult: () => ipcRenderer.invoke("screenshot:get-shortcut-result"),
+    /** 监听全局快捷键触发（主进程 → 渲染进程） */
+    onScreenshotShortcutTriggered: (callback: () => void) => {
+        ipcRenderer.on("screenshot:shortcut-triggered", () => callback())
+    },
+
     // ─── 语言切换 ───
     changeLanguage: (lang: string) => ipcRenderer.send("change-language", lang),
 });

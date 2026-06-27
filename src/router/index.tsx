@@ -31,7 +31,7 @@ function LazyPage({ Component }: { Component: LazyExoticComponent<ComponentType<
 
 const Home = lazyWithSuspense(() => import('@/views/Home'))
 const ReWatermark = lazyWithSuspense(() => import('@/views/Re-watermark'))
-
+const Screenshot = lazyWithSuspense(() => import('@/views/Screenshot'))
 /**
  * 路由配置
  *
@@ -59,6 +59,11 @@ export const routes: RouteConfig[] = [
     path: '/re-watermark',
     title: 'remove-watermark',
     element: <LazyPage Component={ReWatermark} />,
+  },
+  {
+    path: '/screenshot',
+    title: 'screenshot',
+    element: <LazyPage Component={Screenshot} />,
   },
 ]
 

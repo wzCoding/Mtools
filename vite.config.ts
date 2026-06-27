@@ -68,6 +68,15 @@ export default defineConfig({
             outDir: 'dist-electron/preload'
           }
         }
+      },
+      {
+        // 截图选区窗口的 preload
+        entry: 'electron/preload/screenshot-selector.ts',
+        vite: {
+          build: {
+            outDir: 'dist-electron/preload'
+          }
+        }
       }
     ]),
     renderer(),

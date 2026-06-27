@@ -1,31 +1,11 @@
 declare module 'virtual:svg-icons-register' {
-  const component: any
-  export default component
+    const component: any
+    export default component
 }
 
 declare global {
     /** 全局翻译函数，等价于 i18n.t */
     var $t: (key: string, options?: Record<string, unknown>) => string
-    interface Window {
-        /** 全局翻译函数 */
-        $t: (key: string, options?: Record<string, unknown>) => string
-        bridgeApis: {
-            maximize: () => void;
-            minimize: () => void;
-            close: () => void;
-            getProcesses: () => Promise<ProcessInfo[]>;
-            getProcessMemory: (pid: number) => Promise<ProcessMemoryInfo>;
-            getSystemMemory: () => Promise<SystemMemoryInfo>;
-            getProcessCpuTimes: (pid: number) => Promise<number>;
-            getSystemCpuTimes: () => Promise<SystemCpuTimes>;
-            getFileDescription: (path: string) => Promise<FileDescription>;
-            getAppIcon: (appPath: string) => Promise<string>;
-            killProcess: (pid: number) => Promise<number>;
-            getSystemUptime: () => Promise<number>;
-            inpaintLaMa: (imageBuffer: ArrayBuffer, maskBuffer: ArrayBuffer) => Promise<any>
-            changeLanguage: (lang: string) => void
-        };
-    }
 }
 
 export interface ProcessInfo {

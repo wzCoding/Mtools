@@ -3,12 +3,13 @@ import { fileURLToPath } from 'url'
 import path from 'path'
 import handleIpcEvents from '../ipc/index.js'
 import i18n from '../utils/i18n.js'
+import { initShortcut, unregisterAll as unregisterAllShortcuts } from '../utils/shortcut-manager.js'
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
-const debug = false
+const debug = true
 
 function resolveAssetPath(relativePath: string): string {
     if (isDev) {
@@ -82,6 +83,11 @@ function createTray() {
 
 app.whenReady().then(() => {
     createWindow()
+    // 初始化全局截图快捷键
+    const win = BrowserWindow.getAllWindows()[0]
+    if (win) {
+        initShortcut(win)
+    }
 })
 
 app.on('activate', () => {
@@ -92,6 +98,7 @@ app.on('activate', () => {
 
 
 app.on('window-all-closed', () => {
+    unregisterAllShortcuts()
     if (process.platform !== 'darwin') {
         app.quit()
     }

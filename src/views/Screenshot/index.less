@@ -1,0 +1,276 @@
+/* ─── 截图页面 ─── */
+.screenshot-page {
+  width: calc(100% - var(--padding-secondary) * 2);
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--padding-secondary);
+  box-sizing: border-box;
+
+  .screenshot-header {
+    width: 100%;
+    flex-shrink: 0;
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  /* ─── 主体：左右分栏 ─── */
+  .screenshot-body {
+    flex: 1;
+    display: flex;
+    gap: var(--padding-secondary);
+    padding-top: var(--padding-secondary);
+    padding-bottom: var(--padding-secondary);
+    overflow: hidden;
+    min-height: 0;
+  }
+}
+
+/* ─── 预览区（左侧） ─── */
+.screenshot-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  min-width: 0;
+
+  .preview-image-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    overflow: auto;
+    background: 
+      repeating-conic-gradient(#f0f0f0 0% 25%, transparent 0% 50%) 
+        50% / 20px 20px;
+  }
+
+  .preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .ant-image-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+      image-rendering: -webkit-optimize-contrast;
+    }
+  }
+
+  .preview-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-base);
+    flex-shrink: 0;
+  }
+
+  .preview-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ─── 历史列表面板（右侧） ─── */
+.screenshot-history {
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  flex-shrink: 0;
+
+  .history-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    padding: 10px 12px 6px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .history-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+
+    .ant-empty-image {
+      height: 40px;
+    }
+    .ant-empty-description {
+      font-size: 12px;
+    }
+  }
+
+  .history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+
+    &:hover {
+      background: var(--bg-hover);
+
+      .history-delete {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+
+    &.selected {
+      background: color-mix(in oklab, var(--color-primary) 12%, transparent);
+      outline: 1px solid var(--color-primary);
+      outline-offset: -1px;
+    }
+  }
+
+  .history-thumb {
+    width: 44px;
+    height: 32px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f5f5f5;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .history-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .history-time {
+      font-size: 11px;
+      color: var(--color-text-tertiary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-check {
+      font-size: 12px;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+  }
+
+  .history-delete {
+    opacity: 0;
+    pointer-events: none;
+    flex-shrink: 0;
+    font-size: 12px;
+    transition: opacity 0.15s;
+  }
+}
+
+/* ─── 快捷键设置弹窗 ─── */
+.shortcut-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .shortcut-label {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-right: 6px;
+  }
+
+  .shortcut-current {
+    display: flex;
+    align-items: center;
+  }
+
+  .shortcut-recorder {
+    display: flex;
+    align-items: center;
+  }
+
+  .shortcut-input {
+    flex: 1;
+    height: 40px;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    outline: none;
+    user-select: none;
+
+    &:hover {
+      border-color: var(--color-primary);
+    }
+
+    &.recording {
+      border-color: var(--color-primary);
+      border-style: solid;
+      background: color-mix(in oklab, var(--color-primary) 6%, transparent);
+      animation: pulse-border 1.2s ease-in-out infinite;
+    }
+
+    &.filled {
+      border-color: var(--ant-color-success, #52c41a);
+      border-style: solid;
+      background: color-mix(in oklab, var(--ant-color-success, #52c41a) 6%, transparent);
+    }
+
+    .recording-hint {
+      color: var(--color-text-tertiary);
+      font-size: 13px;
+    }
+  }
+
+  .shortcut-tip {
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--color-primary); }
+  50% { border-color: color-mix(in oklab, var(--color-primary) 40%, transparent); }
+}

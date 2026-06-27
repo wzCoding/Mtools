@@ -1,7 +1,7 @@
 import { Tooltip, Modal, Select, Segmented } from 'antd'
 import React, { useMemo, useCallback, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { PictureOutlined, AppstoreOutlined, SettingOutlined, TranslationOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons'
+import { PictureOutlined, AppstoreOutlined, SettingOutlined, TranslationOutlined, SunOutlined, MoonOutlined, AimOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useTheme, type Theme } from '@/hooks/useTheme'
 import i18n from '@/i18n'
@@ -23,6 +23,11 @@ const menus: MenuItem[] = [
         title: 'remove-watermark',
         icon: <PictureOutlined />,
         path: '/re-watermark'
+    },
+    {
+        title:'screenshot',
+        icon:<AimOutlined/>,
+        path:'/screenshot'
     },
     {
         title: 'setting',

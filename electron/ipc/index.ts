@@ -7,6 +7,7 @@ import { getFileDescription } from "@native/descriptionInfo"
 import { killProcess } from "@native/killProcess";
 import { getAppIconByPath } from "../utils/index";
 import { registerInpaintLaMaHandler } from "./ipc-inpaint-lama";
+import { registerScreenshotHandlers } from "./ipc-screenshot";
 
 export default function handleIpcEvents(win: BrowserWindow) {
     // 窗口控制
@@ -67,4 +68,9 @@ export default function handleIpcEvents(win: BrowserWindow) {
     console.log('[LaMa] Registering IPC handler...')
     registerInpaintLaMaHandler(win);
     console.log('[LaMa] IPC handler registered')
+
+    // ─── 截图功能 ───
+    console.log('[Screenshot] Registering IPC handlers...')
+    registerScreenshotHandlers(win);
+    console.log('[Screenshot] IPC handlers registered')
 }
