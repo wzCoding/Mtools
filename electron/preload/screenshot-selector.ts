@@ -17,13 +17,18 @@ contextBridge.exposeInMainWorld('selectorApis', {
     })
   },
 
-  /** 提交选区 */
-  submitSelection: (rect: { x: number; y: number; width: number; height: number }) => {
-    ipcRenderer.send('screenshot:selection-made', rect)
+  /** 提交选区（可选附带合成后的标注图片 data URL） */
+  submitSelection: (rect: { x: number; y: number; width: number; height: number }, compositedDataUrl?: string) => {
+    ipcRenderer.send('screenshot:selection-made', rect, compositedDataUrl)
   },
 
   /** 取消截图 */
   cancelSelection: () => {
     ipcRenderer.send('screenshot:selection-cancel')
+  },
+
+  /** 钉住截图：将合成后的图片创建为置顶浮动窗口 */
+  pinScreenshot: (dataUrl: string) => {
+    ipcRenderer.send('screenshot:pin-image', dataUrl)
   },
 })

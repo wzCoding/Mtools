@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; }
+  body { background:transparent; user-select:none; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+
+  #main-canvas { display:block; position:absolute; top:0; left:0; z-index:1; }
+  #anno-canvas { display:block; position:absolute; top:0; left:0; z-index:2; pointer-events:none; }
+
+  /* 提示 */
+  #hint {
+    position:fixed; top:16px; left:50%; transform:translateX(-50%);
+    color:#fff; font-size:14px; background:rgba(0,0,0,0.55);
+    padding:6px 16px; border-radius:12px; pointer-events:none;
+    z-index:10; backdrop-filter:blur(8px);
+  }
+  #size-label {
+    position:fixed; color:#fff; font-size:12px; background:rgba(0,0,0,0.65);
+    padding:3px 8px; border-radius:6px; pointer-events:none;
+    display:none; z-index:10;
+  }
+
+  /* ─── 工具栏 ─── */
+  #toolbar {
+    position:fixed; bottom:16px; right:16px; z-index:20;
+    display:flex; align-items:center; gap:6px;
+    background:rgba(30,30,30,0.88); backdrop-filter:blur(12px);
+    padding:6px 10px; border-radius:10px;
+    border:1px solid rgba(255,255,255,0.12);
+  }
+  #toolbar .sep { width:1px; height:22px; background:rgba(255,255,255,0.15); margin:0 2px; }
+
+  .tb-btn {
+    width:30px; height:30px; border:none; border-radius:6px;
+    background:transparent; color:#ccc; font-size:16px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background 0.15s,color 0.15s;
+  }
+  .tb-btn:hover { background:rgba(255,255,255,0.12); color:#fff; }
+  .tb-btn.active { background:rgba(255,255,255,0.18); color:#fff; }
+  .tb-btn.confirm { color:#52c41a; }
+  .tb-btn.confirm:hover { background:rgba(82,196,26,0.2); }
+  .tb-btn.cancel { color:#ff4d4f; }
+  .tb-btn.cancel:hover { background:rgba(255,77,79,0.2); }
+
+  .tb-color {
+    width:20px; height:20px; border-radius:50%; border:2px solid transparent;
+    cursor:pointer; transition:border-color 0.15s,transform 0.15s;
+  }
+  .tb-color:hover { transform:scale(1.15); }
+  .tb-color.active { border-color:#fff; transform:scale(1.1); }
+
+  /* 标注模式：标注画布接收事件，选区画布忽略 */
+  body.anno-mode #anno-canvas { pointer-events:auto; cursor:crosshair; }
+  body.anno-mode #main-canvas { pointer-events:none; }
+</style>
+</head>
+<body>
+  <div id="hint">拖拽鼠标框选截图区域 / 按 ESC 取消 / 按 Enter 确认</div>
+  <div id="size-label"></div>
+  <canvas id="main-canvas"></canvas>
+  <canvas id="anno-canvas"></canvas>
+
+  <!-- 工具栏 -->
+  <div id="toolbar">
+    <button class="tb-color" style="background:#ff4d4f" data-color="#ff4d4f" title="红色"></button>
+    <button class="tb-color" style="background:#faad14" data-color="#faad14" title="黄色"></button>
+    <button class="tb-color" style="background:#52c41a" data-color="#52c41a" title="绿色"></button>
+    <button class="tb-color active" style="background:#1890ff" data-color="#1890ff" title="蓝色"></button>
+    <span class="sep"></span>
+    <button class="tb-btn" id="btn-rect" title="矩形">▭</button>
+    <button class="tb-btn" id="btn-arrow" title="箭头">➚</button>
+    <button class="tb-btn" id="btn-free" title="画笔">✏️</button>
+    <span class="sep"></span>
+    <button class="tb-btn" id="btn-undo" title="撤销">↩</button>
+    <span class="sep"></span>
+    <button class="tb-btn" id="btn-pin" title="钉在屏幕上">📌</button>
+    <button class="tb-btn confirm" id="btn-confirm" title="确认截图 (Enter)">✓</button>
+    <button class="tb-btn cancel" id="btn-cancel" title="取消 (ESC)">✕</button>
+  </div>
+
+  <script>
+    (function() {
+      var w = __WIDTH__
+      var h = __HEIGHT__
+
+      // ─── DOM 引用 ───
+      var mainCanvas = document.getElementById('main-canvas')
+      var mainCtx = mainCanvas.getContext('2d')
+      var annoCanvas = document.getElementById('anno-canvas')
+      var annoCtx = annoCanvas.getContext('2d')
+      var hintEl = document.getElementById('hint')
+      var sizeLabel = document.getElementById('size-label')
+
+      mainCanvas.width = w; mainCanvas.height = h
+      annoCanvas.width = w; annoCanvas.height = h
+
+      // ─── 状态 ───
+      var img = null
+      var isSelecting = false
+      var startX = 0, startY = 0
+      var selX = 0, selY = 0, selW = 0, selH = 0
+
+      // 标注相关
+      var annoMode = false
+      var annoTool = null
+      var annoColor = '#1890ff'
+      var annoLineWidth = 3
+      var annoStack = []
+      var isAnnoDrawing = false
+      var annoStartX = 0, annoStartY = 0
+      var annoPreview = null
+
+      // ─── 接收图片数据 ───
+      window.selectorApis.onImageData(function(dataUrl) {
+        img = new Image()
+        img.onload = function() {
+          redrawAll()
+        }
+        img.src = dataUrl
+      })
+
+      // ─── 工具栏按钮 ───
+      document.getElementById('btn-rect').addEventListener('click', function() { setAnnoTool('rect') })
+      document.getElementById('btn-arrow').addEventListener('click', function() { setAnnoTool('arrow') })
+      document.getElementById('btn-free').addEventListener('click', function() { setAnnoTool('freehand') })
+      document.getElementById('btn-undo').addEventListener('click', undoLastAnnotation)
+      document.getElementById('btn-pin').addEventListener('click', pinScreenshot)
+      document.getElementById('btn-confirm').addEventListener('click', confirmScreenshot)
+      document.getElementById('btn-cancel').addEventListener('click', function() { window.selectorApis.cancelSelection() })
+
+      document.querySelectorAll('.tb-color').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.tb-color').forEach(function(b) { b.classList.remove('active') })
+          btn.classList.add('active')
+          annoColor = btn.dataset.color
+        })
+      })
+
+      function setAnnoTool(tool) {
+        if (annoTool === tool && annoMode) {
+          exitAnnoMode()
+          return
+        }
+        annoTool = tool
+        if (!annoMode) enterAnnoMode()
+        updateToolButtons()
+      }
+
+      function enterAnnoMode() {
+        annoMode = true
+        document.body.classList.add('anno-mode')
+        hintEl.style.display = 'none'
+      }
+
+      function exitAnnoMode() {
+        annoMode = false
+        annoTool = null
+        document.body.classList.remove('anno-mode')
+        updateToolButtons()
+      }
+
+      function updateToolButtons() {
+        document.getElementById('btn-rect').classList.toggle('active', annoTool === 'rect')
+        document.getElementById('btn-arrow').classList.toggle('active', annoTool === 'arrow')
+        document.getElementById('btn-free').classList.toggle('active', annoTool === 'freehand')
+      }
+
+      // ─── 绘制主画布 ───
+      function drawMainCanvas() {
+        mainCtx.clearRect(0, 0, w, h)
+        if (!img) return
+        mainCtx.drawImage(img, 0, 0, w, h)
+
+        mainCtx.fillStyle = 'rgba(0, 0, 0, 0.45)'
+        mainCtx.fillRect(0, 0, w, h)
+
+        if (selW > 0 && selH > 0) {
+          mainCtx.save()
+          mainCtx.globalCompositeOperation = 'destination-out'
+          mainCtx.fillStyle = '#fff'
+          mainCtx.fillRect(selX, selY, selW, selH)
+          mainCtx.restore()
+
+          mainCtx.save()
+          mainCtx.beginPath()
+          mainCtx.rect(selX, selY, selW, selH)
+          mainCtx.clip()
+          mainCtx.drawImage(img, 0, 0, w, h)
+          mainCtx.restore()
+
+          mainCtx.strokeStyle = '#1890ff'
+          mainCtx.lineWidth = 2
+          mainCtx.setLineDash([6, 3])
+          mainCtx.strokeRect(selX + 1, selY + 1, selW - 2, selH - 2)
+          mainCtx.setLineDash([])
+
+          var cl = 10
+          mainCtx.strokeStyle = '#fff'; mainCtx.lineWidth = 2
+          mainCtx.beginPath(); mainCtx.moveTo(selX, selY + cl); mainCtx.lineTo(selX, selY); mainCtx.lineTo(selX + cl, selY); mainCtx.stroke()
+          mainCtx.beginPath(); mainCtx.moveTo(selX + selW - cl, selY); mainCtx.lineTo(selX + selW, selY); mainCtx.lineTo(selX + selW, selY + cl); mainCtx.stroke()
+          mainCtx.beginPath(); mainCtx.moveTo(selX, selY + selH - cl); mainCtx.lineTo(selX, selY + selH); mainCtx.lineTo(selX + cl, selY + selH); mainCtx.stroke()
+          mainCtx.beginPath(); mainCtx.moveTo(selX + selW - cl, selY + selH); mainCtx.lineTo(selX + selW, selY + selH); mainCtx.lineTo(selX + selW, selY + selH - cl); mainCtx.stroke()
+
+          sizeLabel.style.display = 'block'
+          var lx = selX + selW + 8 > w - 100 ? selX - 80 : selX + selW + 8
+          var ly = selY + selH + 8 > h - 30 ? selY + selH - 30 : selY + selH + 8
+          sizeLabel.style.left = lx + 'px'
+          sizeLabel.style.top = ly + 'px'
+          sizeLabel.textContent = Math.round(selW) + ' × ' + Math.round(selH)
+        } else {
+          sizeLabel.style.display = 'none'
+        }
+      }
+
+      // ─── 绘制标注画布 ───
+      function drawAnnoCanvas() {
+        annoCtx.clearRect(0, 0, w, h)
+        for (var i = 0; i < annoStack.length; i++) {
+          drawAnnotation(annoCtx, annoStack[i])
+        }
+        if (annoPreview) {
+          drawAnnotation(annoCtx, annoPreview)
+        }
+      }
+
+      function drawAnnotation(ctx, anno) {
+        ctx.save()
+        ctx.strokeStyle = anno.color
+        ctx.fillStyle = anno.color
+        ctx.lineWidth = anno.lineWidth
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+
+        if (anno.type === 'rect') {
+          var p0 = anno.points[0], p1 = anno.points[1]
+          ctx.strokeRect(p0.x, p0.y, p1.x - p0.x, p1.y - p0.y)
+        } else if (anno.type === 'arrow') {
+          var a0 = anno.points[0], a1 = anno.points[1]
+          ctx.beginPath(); ctx.moveTo(a0.x, a0.y); ctx.lineTo(a1.x, a1.y); ctx.stroke()
+          var angle = Math.atan2(a1.y - a0.y, a1.x - a0.x)
+          var headLen = 12
+          ctx.beginPath()
+          ctx.moveTo(a1.x, a1.y)
+          ctx.lineTo(a1.x - headLen * Math.cos(angle - 0.5), a1.y - headLen * Math.sin(angle - 0.5))
+          ctx.lineTo(a1.x - headLen * Math.cos(angle + 0.5), a1.y - headLen * Math.sin(angle + 0.5))
+          ctx.closePath()
+          ctx.fill()
+        } else if (anno.type === 'freehand') {
+          ctx.beginPath()
+          ctx.moveTo(anno.points[0].x, anno.points[0].y)
+          for (var k = 1; k < anno.points.length; k++) {
+            ctx.lineTo(anno.points[k].x, anno.points[k].y)
+          }
+          ctx.stroke()
+        }
+        ctx.restore()
+      }
+
+      function redrawAll() {
+        drawMainCanvas()
+        drawAnnoCanvas()
+      }
+
+      // ─── 选区事件 ───
+      mainCanvas.addEventListener('mousedown', function(e) {
+        if (annoMode) return
+        isSelecting = true
+        startX = e.clientX; startY = e.clientY
+        selX = startX; selY = startY; selW = 0; selH = 0
+        hintEl.style.display = 'none'
+      })
+
+      mainCanvas.addEventListener('mousemove', function(e) {
+        if (!isSelecting) return
+        var mx = e.clientX, my = e.clientY
+        selX = Math.min(startX, mx); selY = Math.min(startY, my)
+        selW = Math.abs(mx - startX); selH = Math.abs(my - startY)
+        drawMainCanvas()
+      })
+
+      mainCanvas.addEventListener('mouseup', function() {
+        if (!isSelecting) return
+        isSelecting = false
+        if (selW < 5 || selH < 5) {
+          selW = 0; selH = 0
+          drawMainCanvas()
+          hintEl.style.display = 'block'
+        }
+      })
+
+      // ─── 标注事件 ───
+      annoCanvas.addEventListener('mousedown', function(e) {
+        if (!annoMode) return
+        isAnnoDrawing = true
+        annoStartX = e.clientX; annoStartY = e.clientY
+        annoPreview = {
+          type: annoTool,
+          color: annoColor,
+          lineWidth: annoLineWidth,
+          points: [{ x: annoStartX, y: annoStartY }]
+        }
+      })
+
+      annoCanvas.addEventListener('mousemove', function(e) {
+        if (!isAnnoDrawing || !annoPreview) return
+        var mx = e.clientX, my = e.clientY
+        if (annoTool === 'freehand') {
+          annoPreview.points.push({ x: mx, y: my })
+        } else {
+          annoPreview.points = [{ x: annoStartX, y: annoStartY }, { x: mx, y: my }]
+        }
+        drawAnnoCanvas()
+      })
+
+      annoCanvas.addEventListener('mouseup', function() {
+        if (!isAnnoDrawing) return
+        isAnnoDrawing = false
+        if (annoPreview && annoPreview.points.length >= 2) {
+          annoStack.push(annoPreview)
+        }
+        annoPreview = null
+        drawAnnoCanvas()
+      })
+
+      // ─── 撤销 ───
+      function undoLastAnnotation() {
+        if (annoStack.length === 0) return
+        annoStack.pop()
+        drawAnnoCanvas()
+      }
+
+      // ─── 钉住截图：合成并发送到主进程创建置顶窗口 ───
+      function pinScreenshot() {
+        if (selW < 5 || selH < 5) return
+
+        var offCanvas = document.createElement('canvas')
+        offCanvas.width = selW
+        offCanvas.height = selH
+        var offCtx = offCanvas.getContext('2d')
+
+        // 绘制选区内的原图
+        offCtx.drawImage(mainCanvas, selX, selY, selW, selH, 0, 0, selW, selH)
+
+        // 绘制选区内的标注
+        for (var i = 0; i < annoStack.length; i++) {
+          var ann = annoStack[i]
+          var shifted = {
+            type: ann.type, color: ann.color, lineWidth: ann.lineWidth,
+            points: ann.points.map(function(p) { return { x: p.x - selX, y: p.y - selY } })
+          }
+          drawAnnotation(offCtx, shifted)
+        }
+
+        var dataUrl = offCanvas.toDataURL('image/png')
+        window.selectorApis.pinScreenshot(dataUrl)
+      }
+
+      // ─── 确认截图 ───
+      function confirmScreenshot() {
+        if (selW < 5 || selH < 5) return
+
+        var hasAnnotations = annoStack.length > 0 || annoPreview
+
+        if (hasAnnotations) {
+          var offCanvas = document.createElement('canvas')
+          offCanvas.width = selW
+          offCanvas.height = selH
+          var offCtx = offCanvas.getContext('2d')
+
+          offCtx.drawImage(mainCanvas, selX, selY, selW, selH, 0, 0, selW, selH)
+
+          for (var i = 0; i < annoStack.length; i++) {
+            var ann = annoStack[i]
+            var shifted = {
+              type: ann.type,
+              color: ann.color,
+              lineWidth: ann.lineWidth,
+              points: ann.points.map(function(p) { return { x: p.x - selX, y: p.y - selY } })
+            }
+            drawAnnotation(offCtx, shifted)
+          }
+
+          var dataUrl = offCanvas.toDataURL('image/png')
+          window.selectorApis.submitSelection({
+            x: selX, y: selY, width: selW, height: selH
+          }, dataUrl)
+        } else {
+          window.selectorApis.submitSelection({
+            x: selX, y: selY, width: selW, height: selH
+          })
+        }
+      }
+
+      // ─── 键盘事件 ───
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          window.selectorApis.cancelSelection()
+        } else if (e.key === 'Enter') {
+          if (selW >= 5 && selH >= 5) {
+            confirmScreenshot()
+          }
+        } else if (e.ctrlKey && e.key === 'z') {
+          e.preventDefault()
+          undoLastAnnotation()
+        }
+      })
+
+      mainCanvas.addEventListener('dblclick', function() {
+        if (selW >= 5 && selH >= 5) {
+          confirmScreenshot()
+        }
+      })
+    })()
+  </script>
+</body>
+</html>

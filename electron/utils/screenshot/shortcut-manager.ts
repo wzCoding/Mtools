@@ -128,6 +128,11 @@ async function handleShortcutTrigger(mainWindow: BrowserWindow): Promise<void> {
   console.log('[Shortcut] 快捷键触发，开始截图...')
   try {
     const result = await startScreenshot(mainWindow)
+    // 如果是并发拒绝（截图进行中），不通知渲染进程
+    if (result.error === '截图进行中，请稍后再试') {
+      console.warn('[Shortcut] 截图进行中，忽略重复快捷键')
+      return
+    }
     lastShortcutResult = result
 
     // 通知渲染进程导航到截图页面并取结果

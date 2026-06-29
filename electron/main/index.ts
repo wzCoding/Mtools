@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url'
 import path from 'path'
 import handleIpcEvents from '../ipc/index.js'
 import i18n from '../utils/i18n.js'
-import { initShortcut, unregisterAll as unregisterAllShortcuts } from '../utils/shortcut-manager.js'
+import { initShortcut, unregisterAll as unregisterAllShortcuts } from '../utils/screenshot/shortcut-manager.js'
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 const __filename = fileURLToPath(import.meta.url)

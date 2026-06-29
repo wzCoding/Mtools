@@ -5,12 +5,12 @@
  */
 import { BrowserWindow, ipcMain, clipboard, nativeImage, dialog } from 'electron'
 import fs from 'fs'
-import { startScreenshot } from '../utils/screenshot.js'
+import { startScreenshot } from '../utils/screenshot/screenshot.js'
 import {
   getCurrentShortcut,
   updateShortcut,
   consumeShortcutResult,
-} from '../utils/shortcut-manager.js'
+} from '../utils/screenshot/shortcut-manager.js'
 
 /**
  * 注册截图相关的 IPC handler

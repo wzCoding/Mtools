@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, message, Empty, Tooltip, Popconfirm, Image, Modal, Tag, Space } from 'antd'
+import { Button, message, Empty, Tooltip, Popconfirm, Image, Modal, Tag } from 'antd'
 import {
   CameraOutlined,
   CopyOutlined,
@@ -39,28 +39,40 @@ export default function Screenshot() {
   const [recording, setRecording] = useState(false)
   const recordRef = useRef(false)
 
+  /** 拉取并展示快捷键截图的公共逻辑 */
+  const fetchShortcutResult = useCallback(() => {
+    if (!window.bridgeApis?.getShortcutScreenshotResult) return
+    window.bridgeApis.getShortcutScreenshotResult().then((result) => {
+      if (result?.success && result.dataUrl) {
+        const record: ScreenshotRecord = {
+          id: `sc_shortcut_${Date.now()}`,
+          dataUrl: result.dataUrl,
+          timestamp: Date.now(),
+        }
+        setHistory((prev) => [record, ...prev])
+        setSelectedId(record.id)
+        messageApi.success($t('screenshot-success'))
+      }
+    })
+  }, [$t, messageApi])
+
   // ─── 初始化：加载快捷键 & 检查快捷键触发的结果 ───
   useEffect(() => {
     // 加载当前快捷键
     if (window.bridgeApis?.getScreenshotShortcut) {
       window.bridgeApis.getScreenshotShortcut().then(setCurrentAccelerator)
     }
-    // 检查是否有通过全局快捷键触发的结果
-    if (window.bridgeApis?.getShortcutScreenshotResult) {
-      window.bridgeApis.getShortcutScreenshotResult().then((result) => {
-        if (result?.success && result.dataUrl) {
-          const record: ScreenshotRecord = {
-            id: `sc_shortcut_${Date.now()}`,
-            dataUrl: result.dataUrl,
-            timestamp: Date.now(),
-          }
-          setHistory((prev) => [record, ...prev])
-          setSelectedId(record.id)
-          messageApi.success($t('screenshot-success'))
-        }
-      })
-    }
+    // 初次挂载时检查是否有通过全局快捷键触发的结果（从其他页面跳转过来）
+    fetchShortcutResult()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── 监听快捷键触发（已在截图页面时） ───
+  useEffect(() => {
+    if (!window.bridgeApis?.onScreenshotShortcutTriggered) return
+    window.bridgeApis.onScreenshotShortcutTriggered(() => {
+      fetchShortcutResult()
+    })
+  }, [fetchShortcutResult])
 
   // 当前选中的截图记录
   const selectedRecord = history.find((r) => r.id === selectedId) ?? null

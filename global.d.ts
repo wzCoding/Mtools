@@ -3,6 +3,11 @@ declare module 'virtual:svg-icons-register' {
     export default component
 }
 
+declare module '*.html?raw' {
+    const content: string
+    export default content
+}
+
 declare global {
     /** 全局翻译函数，等价于 i18n.t */
     var $t: (key: string, options?: Record<string, unknown>) => string

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:transparent; }
+  body {
+    display:flex; align-items:center; justify-content:center;
+    -webkit-app-region:drag;
+  }
+  img {
+    max-width:100%; max-height:100%; object-fit:contain;
+    border-radius:6px; box-shadow:0 4px 24px rgba(0,0,0,0.35);
+  }
+  #close-btn {
+    position:fixed; top:6px; right:6px;
+    width:26px; height:26px; border-radius:50%;
+    border:none; background:rgba(0,0,0,0.55); color:#fff;
+    font-size:14px; cursor:pointer; display:flex;
+    align-items:center; justify-content:center;
+    opacity:0; transition:opacity 0.2s;
+    -webkit-app-region:no-drag; z-index:10;
+  }
+  body:hover #close-btn { opacity:1; }
+  #close-btn:hover { background:rgba(255,77,79,0.85); }
+</style>
+</head>
+<body>
+  <button id="close-btn" onclick="window.close()">✕</button>
+  <img src="__IMAGE_URL__" alt="pinned screenshot" />
+  <script>document.addEventListener('contextmenu',function(e){e.preventDefault()})</script>
+</body>
+</html>
