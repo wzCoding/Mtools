@@ -289,12 +289,6 @@ async function cropImage(
     .toBuffer()
 }
 
-/** ─── 钉图窗口 ─── */
-
-/**
- * 创建置顶浮动窗口，将截图钉在屏幕上
- * 窗口特性：无边框、始终置顶、可拖拽、关闭按钮悬停显示
- */
 function createPinnedWindow(dataUrl: string): void {
   const img = nativeImage.createFromDataURL(dataUrl)
   const imgSize = img.getSize()
