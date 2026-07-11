@@ -234,9 +234,9 @@ function openScreenshotSelector(
     // 监听"钉住截图"
     const onPinImage = (_event: Electron.IpcMainEvent, dataUrl: string) => {
       createPinnedWindow(dataUrl)
-      // 关闭选区窗口，不向主应用返回截图结果
       cleanup()
-      resolve(null)
+      // 同时将结果返回给渲染进程，加入历史记录
+      resolve({ rect: { x: 0, y: 0, width: 0, height: 0 }, compositedDataUrl: dataUrl })
     }
     ipcMain.once('screenshot:pin-image', onPinImage)
 
